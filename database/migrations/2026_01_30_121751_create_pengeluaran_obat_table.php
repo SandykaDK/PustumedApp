@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('pengeluaran_obat', function (Blueprint $table) {
+            $table->id();
+            $table->date('tanggal_pengeluaran');
+            $table->foreignId('user_id')->constrained('users', 'id');
+            $table->foreignId('pasien_id')->constrained('pasien', 'id');
+            $table->foreignId('dokter_id')->constrained('dokter', 'id');
+            $table->string('keterangan')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('pengeluaran_obat');
+    }
+};
