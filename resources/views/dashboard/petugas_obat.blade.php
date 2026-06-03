@@ -7,13 +7,43 @@
                 <div class="value">{{ $stat['value'] ?? '0' }}</div>
             </div>
         @endforeach
+        <!-- Pemusnahan status cards: show separate cards for each status -->
+        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
+            <div class="stat-icon gray">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h6M7 11h6M7 15h6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4a1 1 0 0 0 1 1h4M5 21h14a2 2 0 0 0 2-2V7L14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg>
+            </div>
+            <h3>Belum Diajukan</h3>
+            <div class="value">{{ number_format($pemusnahanCounts['belum_diajukan'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
+            <div class="stat-icon orange">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+            </div>
+            <h3>Sudah Diajukan</h3>
+            <div class="value">{{ number_format($pemusnahanCounts['sudah_diajukan'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_disetujui']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
+            <div class="stat-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+            </div>
+            <h3>Sudah Disetujui</h3>
+            <div class="value">{{ number_format($pemusnahanCounts['sudah_disetujui'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dimusnahkan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
+            <div class="stat-icon purple">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+            </div>
+            <h3>Sudah Dimusnahkan</h3>
+            <div class="value">{{ number_format($pemusnahanCounts['sudah_dimusnahkan'] ?? 0) }}</div>
+        </a>
     </div>
 
     <div class="petugas-top-grid">
         <div class="chart-card priority-table-card">
-            <h4>Prioritas Utama</h4>
+            <h3>Info Stok Obat</h3>
             <div class="priority-table-toolbar">
                 <div class="priority-filter-group">
+                    <br>
                     <label for="priorityStatusFilter">Filter Status</label>
                     <select id="priorityStatusFilter" class="priority-status-filter">
                         <option value="all">Semua Status</option>
@@ -25,7 +55,7 @@
                     </select>
                 </div>
                 <div class="priority-table-meta">
-                    <span>{{ count($priorityItems ?? []) }} data prioritas</span>
+                    <span>{{ count($priorityItems ?? []) }} data </span>
                 </div>
             </div>
             <div class="priority-table-wrap">
@@ -40,12 +70,8 @@
                     </thead>
                     <tbody>
                         @php
-                            // Batasi jumlah item yang ditampilkan di card Prioritas Utama
-                            if(isset($priorityItems) && $priorityItems instanceof \Illuminate\Support\Collection) {
-                                $displayPriorityItems = $priorityItems->slice(0, 6);
-                            } else {
-                                $displayPriorityItems = array_slice($priorityItems ?? [], 0, 6);
-                            }
+                            // Tampilkan semua item prioritas (biarkan container yang menggulir jika banyak data)
+                            $displayPriorityItems = $priorityItems ?? [];
                         @endphp
 
                         @forelse($displayPriorityItems as $item)
@@ -76,7 +102,25 @@
             <h2>Notifikasi</h2>
             <div class="notification-scroll">
                 <div class="notification-stack">
-                    @forelse($notifications ?? [] as $notification)
+                    @php
+                        // Robust sorting: compute numeric timestamp for each notification then sort desc
+                        $sortedNotifications = collect($notifications ?? [])->map(function ($n) {
+                            $ts = 0;
+                            if (isset($n['sort_at'])) {
+                                if (is_numeric($n['sort_at'])) {
+                                    $ts = (int) $n['sort_at'];
+                                } elseif ($n['sort_at'] instanceof \DateTimeInterface) {
+                                    $ts = $n['sort_at']->getTimestamp();
+                                } else {
+                                    $ts = strtotime((string) $n['sort_at']) ?: 0;
+                                }
+                            }
+                            $n['_ts'] = $ts;
+                            return $n;
+                        })->sortByDesc('_ts')->values();
+                    @endphp
+
+                    @forelse($sortedNotifications as $notification)
                         <div class="notification-card {{ $notification['type'] ?? 'info' }}">
                             <span class="notification-chip">
                                 {{ $notification['title'] ?? 'Notifikasi' }}
@@ -113,49 +157,7 @@
         </div>
     </div>
 
-    <div class="petugas-activity-grid">
-        <div class="chart-card activity-card">
-            <h4>5 Transaksi Penerimaan Terakhir</h4>
-            <div class="activity-list">
-                @forelse($recentReceipts ?? [] as $receipt)
-                    <div class="activity-item">
-                        <div class="activity-item-header">
-                            <strong>{{ $receipt['title'] ?? '-' }}</strong>
-                            <span>{{ $receipt['date_label'] ?? '-' }}</span>
-                        </div>
-                        <div class="activity-item-meta">
-                            <span>{{ $receipt['user_name'] ?? '-' }}</span>
-                            <span>{{ $receipt['detail_count'] ?? 0 }} item</span>
-                        </div>
-                        <p>{{ $receipt['items'] ?? '-' }}</p>
-                    </div>
-                @empty
-                    <div class="notification-empty">Belum ada transaksi penerimaan terbaru.</div>
-                @endforelse
-            </div>
-        </div>
-
-        <div class="chart-card activity-card">
-            <h4>5 Transaksi Pengeluaran Terakhir</h4>
-            <div class="activity-list">
-                @forelse($recentIssues ?? [] as $issue)
-                    <div class="activity-item">
-                        <div class="activity-item-header">
-                            <strong>{{ $issue['title'] ?? '-' }}</strong>
-                            <span>{{ $issue['date_label'] ?? '-' }}</span>
-                        </div>
-                        <div class="activity-item-meta">
-                            <span>{{ $issue['user_name'] ?? '-' }}</span>
-                            <span>{{ $issue['detail_count'] ?? 0 }} item</span>
-                        </div>
-                        <p>{{ $issue['items'] ?? '-' }}</p>
-                    </div>
-                @empty
-                    <div class="notification-empty">Belum ada transaksi pengeluaran terbaru.</div>
-                @endforelse
-            </div>
-        </div>
-    </div>
+    <!-- Removed recent transactions cards: 5 recent receipts and 5 recent issues (not needed) -->
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>

@@ -147,6 +147,24 @@ class DashboardController extends Controller
         $transaksiHariIni = PenerimaanObat::whereDate('tanggal_penerimaan', $today->toDateString())->count()
             + PengeluaranObat::whereDate('tanggal_pengeluaran', $today->toDateString())->count();
 
+        // Pemusnahan counts: compute pending/approved/dimusnahkan and candidate stok (belum diajukan)
+        $pemusnahanPendingCount = PemusnahanObat::where('status', 'pending')->count();
+        $pemusnahanApprovedCount = PemusnahanObat::where('status', 'approved')->count();
+        $pemusnahanDimusnahkanCount = PemusnahanObat::where('status', 'dimusnahkan')->count();
+
+        // Determine stok batches near expiry that are not already referenced by a pending pemusnahan request
+        $pendingStokIds = \App\Models\DetailPemusnahanObat::whereHas('pemusnahan', function ($q) {
+                $q->where('status', 'pending');
+            })->pluck('stok_obat_id')->filter()->unique()->toArray();
+
+        $stokCandidatesQuery = StokObat::whereBetween('tanggal_kadaluwarsa', [$today->toDateString(), $next30Days->toDateString()])
+            ->where('stok', '>', 0)
+            ->when(count($pendingStokIds) > 0, function ($q) use ($pendingStokIds) {
+                $q->whereNotIn('id', $pendingStokIds);
+            });
+
+        $pemusnahanBelumDiajukanCount = (int) $stokCandidatesQuery->count();
+
         $chartMonths = [];
         $chartReceiptsData = [];
         $chartIssuesData = [];
@@ -269,12 +287,10 @@ class DashboardController extends Controller
             'dashboardAccentClass' => 'petugas-obat-hero',
             'dashboardBadge' => 'Role: Petugas Obat',
             'dashboardStats' => [
-                ['label' => 'Total jenis obat', 'value' => number_format($totalJenisObat), 'icon' => '💊', 'tone' => 'blue'],
-                ['label' => 'Total stok obat', 'value' => number_format($totalStokObat), 'icon' => '📦', 'tone' => 'green'],
+                ['label' => 'Jumlah Daftar Obat', 'value' => number_format($totalJenisObat), 'icon' => '💊', 'tone' => 'blue'],
                 ['label' => 'Obat stok minimum', 'value' => number_format($obatStokMinimum), 'icon' => '⚠️', 'tone' => 'orange'],
                 ['label' => 'Obat kadaluarsa', 'value' => number_format($obatKadaluarsa), 'icon' => '⛔', 'tone' => 'red'],
                 ['label' => 'Mendekati kadaluarsa', 'value' => number_format($obatMendekatiKadaluarsa), 'icon' => '⏳', 'tone' => 'purple'],
-                ['label' => 'Transaksi hari ini', 'value' => number_format($transaksiHariIni), 'icon' => '🧾', 'tone' => 'blue'],
             ],
             'dashboardHighlights' => [
                 ['label' => 'Obat perlu pengadaan', 'value' => number_format($obatStokMinimum), 'description' => 'Item yang stoknya sudah berada di batas minimum.'],
@@ -283,6 +299,12 @@ class DashboardController extends Controller
             ],
             'priorityItems' => $priorityItems,
             'notifications' => $notifications,
+            'pemusnahanCounts' => [
+                'belum_diajukan' => $pemusnahanBelumDiajukanCount,
+                'sudah_diajukan' => $pemusnahanPendingCount,
+                'sudah_disetujui' => $pemusnahanApprovedCount,
+                'sudah_dimusnahkan' => $pemusnahanDimusnahkanCount,
+            ],
             'chartMonths' => $chartMonths,
             'chartReceiptsData' => $chartReceiptsData,
             'chartIssuesData' => $chartIssuesData,
