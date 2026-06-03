@@ -11,12 +11,13 @@ class PasienController extends Controller
     public function index(Request $request)
     {
         $search = $request->search;
+        $status = $request->status;
         $sort = $request->sort ?? 'created_at';
         $direction = $request->direction ?? 'desc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['nama', 'alamat', 'no_telepon', 'no_bpjs', 'created_at'];
+        $allowed = ['nama', 'alamat', 'no_telepon', 'jenis_kelamin', 'golongan_darah', 'no_bpjs', 'created_at'];
         if (! in_array($sort, $allowed)) {
             $sort = 'created_at';
         }
@@ -35,12 +36,18 @@ class PasienController extends Controller
                 ->orWhere('no_bpjs', 'like', "%$search%");
             });
         })
+        ->when($status && $status !== 'semua', function ($query) use ($status) {
+            $mappedStatus = $status === 'nonaktif' ? 'non-aktif' : $status;
+
+            $query->where('status', $mappedStatus);
+        })
         ->orderBy($sort, $direction)
         ->paginate($perPage);
 
         return view('pasien.pasien', compact(
             'pasiens',
             'search',
+            'status',
             'sort',
             'direction',
             'perPage'
@@ -55,19 +62,25 @@ class PasienController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama'        => 'required|string|max:255',
-            'nik'       => 'required|string|max:255',
-            'alamat'       => 'required|string|max:255',
-            'no_telepon'       => 'required|string|max:255',
-            'no_bpjs'       => 'required|string|max:255',
+            'nama'              => 'required|string|max:255',
+            'nik'               => 'required|string|max:255',
+            'alamat'            => 'required|string|max:255',
+            'jenis_kelamin'     => 'required|in:L,P',
+            'golongan_darah'    => 'required|in:A,B,AB,O',
+            'no_telepon'        => 'required|string|max:255',
+            'no_bpjs'           => 'required|string|max:255',
+            'status'            => 'required|in:aktif,non-aktif',
         ]);
 
         Pasien::create([
-            'nama'         => $request->nama,
-            'nik'          => $request->nik,
-            'alamat'       => $request->alamat,
-            'no_telepon'   => $request->no_telepon,
-            'no_bpjs'      => $request->no_bpjs,
+            'nama'          => $request->nama,
+            'nik'           => $request->nik,
+            'alamat'        => $request->alamat,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'golongan_darah'=> $request->golongan_darah,
+            'no_telepon'    => $request->no_telepon,
+            'no_bpjs'       => $request->no_bpjs,
+            'status'        => $request->status ?? 'aktif',
         ]);
 
         return redirect()
@@ -83,11 +96,14 @@ class PasienController extends Controller
     public function update(Request $request, Pasien $pasien)
     {
         $validator = Validator::make($request->all(), [
-            'nama'        => 'required|string|max:255',
-            'nik'         => 'required|string|max:255',
-            'alamat'      => 'required|string|max:255',
-            'no_telepon'  => 'required|string|max:255',
-            'no_bpjs'     => 'required|string|max:255',
+            'nama'          => 'required|string|max:255',
+            'nik'           => 'required|string|max:255',
+            'alamat'        => 'required|string|max:255',
+            'jenis_kelamin' => 'required|in:L,P',
+            'golongan_darah'=> 'required|in:A,B,AB,O',
+            'no_telepon'    => 'required|string|max:255',
+            'no_bpjs'       => 'required|string|max:255',
+            'status'        => 'required|in:aktif,non-aktif',
         ]);
 
         if ($validator->fails()) {
@@ -101,8 +117,11 @@ class PasienController extends Controller
             'nama',
             'nik',
             'alamat',
+            'jenis_kelamin',
+            'golongan_darah',
             'no_telepon',
-            'no_bpjs'
+            'no_bpjs',
+            'status'
         ]));
 
         return redirect()

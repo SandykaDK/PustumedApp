@@ -12,7 +12,7 @@ class UserSeeder extends Seeder
     {
         DB::table('users')->insert([
             [
-                'name' => 'Sandyka Dwi Kurniawan',
+                'name' => 'User 1',
                 'email' => 'sandyka@gmail.com',
                 'password' => Hash::make('jarak123'),
                 'role' => 'kepala_pustu',
@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Ardiansyah Ryanova Ashari',
+                'name' => 'User 2',
                 'email' => 'ardiansyah@gmail.com',
                 'password' => Hash::make('jarak123'),
                 'role' => 'petugas_administrasi',
@@ -32,11 +32,21 @@ class UserSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
-                'name' => 'Reno Putro Setyo Singgih',
+                'name' => 'User 3',
                 'email' => 'reno@gmail.com',
                 'password' => Hash::make('jarak123'),
                 'role' => 'petugas_obat',
                 'no_telepon' => '08937361827',
+                'status' => 'aktif',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'name' => 'Super Admin',
+                'email' => 'superadmin@gmail.com',
+                'password' => Hash::make('jarak123'),
+                'role' => 'super_admin',
+                'no_telepon' => '087362515233',
                 'status' => 'aktif',
                 'created_at' => now(),
                 'updated_at' => now(),

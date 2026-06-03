@@ -5,10 +5,12 @@
     $type = $type ?? (session('success') ? 'success' : (session('error') ? 'error' : null));
     $message = $message ?? ($type ? session($type) : null);
     $id = 'alert_' . uniqid();
+    $title = $type === 'success' ? 'Berhasil' : 'Terjadi Kesalahan';
 @endphp
 
 @if($type && $message)
-    <div id="{{ $id }}" class="toast {{ $type }}" role="status" aria-live="polite">
+    <div id="{{ $id }}" class="toast {{ $type }}" role="status" aria-live="{{ $type === 'error' ? 'assertive' : 'polite' }}" style="--toast-duration: {{ (int) $duration }}ms;">
+        <div class="toast-glow" aria-hidden="true"></div>
         <div class="toast-icon" aria-hidden="true">
             @if($type === 'success')
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -18,12 +20,17 @@
         </div>
 
         <div class="toast-content">
+            <div class="toast-title">{{ $title }}</div>
             <div class="toast-message">{{ $message }}</div>
         </div>
 
         <button type="button" class="toast-close" aria-label="Tutup" title="Tutup">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+
+        @if($autoHide)
+            <div class="toast-progress" aria-hidden="true"></div>
+        @endif
     </div>
 
     <script>

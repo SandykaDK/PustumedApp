@@ -4,8 +4,8 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use App\Models\NamaObat;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\DetailPengeluaranObat;
 
 class MinMaxService
@@ -14,27 +14,37 @@ class MinMaxService
      * Calculate and update MinMax values for a given obat
      * Called after penerimaan or pengeluaran transaksi
      */
-    public function calculateAndUpdate($namaObatId)
+    public function calculateAndUpdate($namaObatId, $recordDate = null)
     {
         $namaObat = NamaObat::findOrFail($namaObatId);
+        $asOfDate = $recordDate ? Carbon::parse($recordDate) : Carbon::now();
+        $periodeYear = (int) $asOfDate->year;
+        $periodeMonth = (int) $asOfDate->month;
+        $monthStart = $asOfDate->copy()->startOfMonth()->startOfDay();
+        $monthEnd = $asOfDate->copy()->endOfMonth()->endOfDay();
 
         // Debugging: Cek berapa jumlah detail yang ada
-        $totalDetail = DetailPengeluaranObat::where('nama_obat_id', $namaObatId)->count();
+        $totalDetail = DB::table('detail_pengeluaran_obat')
+            ->where('nama_obat_id', $namaObatId)
+            ->count();
         Log::info("MinMax Calculate - nama_obat_id: $namaObatId, total detail: $totalDetail");
 
-        // Ambil rata-rata pengeluaran 30 hari terakhir
-        $rataRataPengeluaran = $this->getRataRataPengeluaran($namaObatId);
-        Log::info("Rata-rata pengeluaran 30 hari: $rataRataPengeluaran");
+        // Ambil pemakaian bulanan untuk obat ini, lalu hitung per hari
+        $usageSummary = $this->getMonthlyUsageSummary($namaObatId, $monthStart, $monthEnd);
 
-        // Jika masih 0, gunakan nilai default (bisa dari config atau permintaan terakhir)
-        if ($rataRataPengeluaran == 0) {
-            $rataRataPengeluaran = $this->getLastWithdrawal($namaObatId) ?? 10;
-            Log::info("Rata-rata default: $rataRataPengeluaran");
+        $totalMonthlyUsage = (int) ($usageSummary->total_qty ?? 0);
+        $usageDays = (int) ($usageSummary->usage_days ?? 0);
+        $maxPerDay = (int) ($usageSummary->max_daily_usage ?? 0);
+        $rataRataPengeluaran = round($usageDays > 0 ? ($totalMonthlyUsage / $usageDays) : 0, 2);
+
+        Log::info("Monthly usage for obat $namaObatId: total=$totalMonthlyUsage, usage_days=$usageDays, avg=$rataRataPengeluaran, max_daily=$maxPerDay");
+
+        // Jika belum ada data pada bulan berjalan, pakai fallback terakhir sebelum tanggal kalkulasi
+        if ($totalMonthlyUsage === 0) {
+            $rataRataPengeluaran = (float) ($this->getLastWithdrawal($namaObatId, $asOfDate) ?? 0);
+            $maxPerDay = (int) $rataRataPengeluaran;
+            Log::info("Fallback monthly usage for obat $namaObatId: avg=$rataRataPengeluaran, max_daily=$maxPerDay");
         }
-
-        // Pemakaian maksimum per transaksi (30 hari terakhir)
-        $maxPerDay = $this->getPemakaianMaksimumPerHari($namaObatId);
-        Log::info("Max per transaksi 30 hari: $maxPerDay");
 
         // Lead time (default 5 hari atau dari konfigurasi)
         $leadTime = 5;
@@ -53,9 +63,15 @@ class MinMaxService
         $reorderPoint = (int) ceil($maximumStock - $minimumStock);
 
         // Save atau update ke tabel min_max
-        $namaObat->minMax()->updateOrCreate(
-            ['nama_obat_id' => $namaObatId],
+        $minMax = $namaObat->minMaxRecords()->updateOrCreate(
             [
+                'nama_obat_id' => $namaObatId,
+                'periode_year' => $periodeYear,
+                'periode_month' => $periodeMonth,
+            ],
+            [
+                'periode_year' => $periodeYear,
+                'periode_month' => $periodeMonth,
                 'average_daily_usage' => $rataRataPengeluaran,
                 'maximum_daily_usage' => $maxPerDay,
                 'minimum_stock' => $minimumStock,
@@ -66,63 +82,48 @@ class MinMaxService
             ]
         );
 
-        return $namaObat->minMax()->first();
+        return $minMax;
     }
 
     /**
-     * Get average withdrawal - hitung dari data 30 hari terakhir
+     * Get monthly total and max daily usage for the selected month.
      */
-    public function getRataRataPengeluaran($namaObatId)
+    public function getMonthlyUsageSummary($namaObatId, Carbon $monthStart, Carbon $monthEnd)
     {
-        // Ambil data detail pengeluaran 30 hari terakhir
-        $thirtyDaysAgo = Carbon::now()->subDays(30);
-        $recentDetails = DetailPengeluaranObat::where('nama_obat_id', $namaObatId)
-            ->where('created_at', '>=', $thirtyDaysAgo)
+        $dailyUsage = DetailPengeluaranObat::query()
+            ->select(
+                'detail_pengeluaran_obat.nama_obat_id',
+                DB::raw('DATE(pengeluaran_obat.tanggal_pengeluaran) as usage_date'),
+                DB::raw('SUM(detail_pengeluaran_obat.jumlah_keluar) as daily_total')
+            )
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->where('detail_pengeluaran_obat.nama_obat_id', $namaObatId)
+            ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                $monthStart->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->groupBy('detail_pengeluaran_obat.nama_obat_id', DB::raw('DATE(pengeluaran_obat.tanggal_pengeluaran)'))
+            ->orderBy('usage_date')
             ->get();
 
-        Log::info("Detail count for obat $namaObatId in last 30 days: " . $recentDetails->count());
-
-        if ($recentDetails->isEmpty()) {
-            Log::info("Tidak ada detail dalam 30 hari terakhir, return 0");
-            return 0;
-        }
-
-        $totalQty = $recentDetails->sum('jumlah_keluar');
-        $totalDays = $recentDetails->count(); // jumlah transaksi dalam 30 hari
-
-        $avg = $totalQty / max($totalDays, 1);
-        Log::info("Total qty in 30 days: $totalQty, Total transactions: $totalDays, Avg per transaction: $avg");
-
-        return $avg;
-    }
-
-    /**
-     * Get maximum usage per transaction - dari data 30 hari terakhir
-     */
-    public function getPemakaianMaksimumPerHari($namaObatId)
-    {
-        // Ambil maximum quantity per transaksi dalam 30 hari terakhir
-        $thirtyDaysAgo = Carbon::now()->subDays(30);
-        $maxDetail = DetailPengeluaranObat::where('nama_obat_id', $namaObatId)
-            ->where('created_at', '>=', $thirtyDaysAgo)
-            ->orderBy('jumlah_keluar', 'desc')
-            ->first();
-
-        $max = $maxDetail ? $maxDetail->jumlah_keluar : 0;
-        Log::info("Max per transaksi for obat $namaObatId in last 30 days: $max");
-
-        return $max;
+        return (object) [
+            'total_qty' => (int) $dailyUsage->sum('daily_total'),
+            'usage_days' => (int) $dailyUsage->count(),
+            'max_daily_usage' => (int) $dailyUsage->max('daily_total'),
+        ];
     }
 
     /**
      * Get the last withdrawal amount (fallback jika tidak ada data 30 hari)
      */
-    public function getLastWithdrawal($namaObatId)
+    public function getLastWithdrawal($namaObatId, Carbon $asOfDate)
     {
-        $lastWithdrawal = DetailPengeluaranObat::where('nama_obat_id', $namaObatId)
+        $lastWithdrawal = DB::table('detail_pengeluaran_obat')
+            ->where('nama_obat_id', $namaObatId)
+            ->where('created_at', '<=', $asOfDate)
             ->orderBy('created_at', 'desc')
             ->first();
 
-        return $lastWithdrawal ? $lastWithdrawal->jumlah_keluar : null;
+        return $lastWithdrawal ? (int) $lastWithdrawal->jumlah_keluar : null;
     }
 }

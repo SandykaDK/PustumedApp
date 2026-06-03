@@ -11,7 +11,8 @@ return new class extends Migration {
         Schema::create('pemusnahan_obat', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id'); // pengaju (petugas)
-            $table->date('tanggal_pemusnahan')->nullable();
+            $table->dateTime('tanggal_pengajuan')->nullable();
+            $table->dateTime('tanggal_pemusnahan')->nullable();
             $table->string('status')->default('pending'); // pending | approved
             $table->unsignedBigInteger('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();

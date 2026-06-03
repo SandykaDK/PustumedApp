@@ -17,9 +17,13 @@ class PenerimaanObatController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->search;
+        $search = trim((string) $request->search);
         $tanggal_awal = $request->tanggal_awal;
         $tanggal_akhir = $request->tanggal_akhir;
+        $perPage = (int) $request->get('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
         $sort = $request->sort ?? 'created_at';
         $direction = $request->direction ?? 'desc';
 
@@ -30,10 +34,18 @@ class PenerimaanObatController extends Controller
         }
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
-        $penerimaanObats = PenerimaanObat::with(['user', 'detailPenerimaanObat'])
+        $penerimaanObats = PenerimaanObat::with([
+                'user',
+                'detailPenerimaanObat.namaObat',
+                'detailPenerimaanObat.jenisObat',
+                'detailPenerimaanObat.satuan',
+            ])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('no_batch', 'like', "%$search%");
+                        $q->orWhereHas('detailPenerimaanObat.namaObat', function ($detailQuery) use ($search) {
+                            $detailQuery->where('nama_obat', 'like', "%$search%");
+                        });
                 });
             })
             ->when($tanggal_awal, function ($query) use ($tanggal_awal) {
@@ -43,7 +55,7 @@ class PenerimaanObatController extends Controller
                 $query->where('tanggal_penerimaan', '<=', $tanggal_akhir);
             })
             ->orderBy($sort, $direction)
-            ->get();
+            ->paginate($perPage);
 
         // Load supporting data for dropdowns in modals
         $namaObats = NamaObat::with(['jenisObat', 'satuanObat'])->orderBy('nama_obat')->get();
@@ -55,6 +67,7 @@ class PenerimaanObatController extends Controller
             'search',
             'tanggal_awal',
             'tanggal_akhir',
+            'perPage',
             'sort',
             'direction',
             'namaObats',

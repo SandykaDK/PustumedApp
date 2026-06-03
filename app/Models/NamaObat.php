@@ -36,7 +36,12 @@ class NamaObat extends Model
 
     public function minMax()
     {
-        return $this->hasOne(MinMax::class, 'nama_obat_id');
+        return $this->hasOne(MinMax::class, 'nama_obat_id')->latestOfMany();
+    }
+
+    public function minMaxRecords()
+    {
+        return $this->hasMany(MinMax::class, 'nama_obat_id');
     }
 
     public function stokObat()
@@ -47,6 +52,35 @@ class NamaObat extends Model
     public function detailPenerimaanObat()
     {
         return $this->hasMany(DetailPenerimaanObat::class, 'nama_obat_id');
+    }
+
+    public function detailPengeluaranObat()
+    {
+        return $this->hasMany(DetailPengeluaranObat::class, 'nama_obat_id');
+    }
+
+    public function detailPemusnahanObat()
+    {
+        return $this->hasMany(DetailPemusnahanObat::class, 'nama_obat_id');
+    }
+
+    public function isInUse(): bool
+    {
+        $usageRelations = [
+            'detailPenerimaanObat',
+            'detailPengeluaranObat',
+            'detailPemusnahanObat',
+            'stokObat',
+            'minMax',
+        ];
+
+        foreach ($usageRelations as $relation) {
+            if ($this->{$relation}()->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // public function getTotalStokAttribute()

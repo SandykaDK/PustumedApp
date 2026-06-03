@@ -1,8 +1,17 @@
+@php
+    $logoPath = public_path('images/logo-pustumed-v2.png');
+    $logoBase64 = file_exists($logoPath)
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+        : null;
+    $printNow = \Carbon\Carbon::now('Asia/Jakarta')->locale('id');
+    $tanggalPengeluaran = \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->locale('id');
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Bukti Pengeluaran Obat</title>
     <style>
         * {
@@ -11,274 +20,335 @@
             box-sizing: border-box;
         }
 
+        @page {
+            size: A5 portrait;
+            margin: 12mm 10mm;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            font-size: 11px;
-            line-height: 1.4;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111;
+            font-size: 10px;
+            line-height: 1.35;
+            background: #fff;
         }
 
-        .receipt-container {
-            width: 100%;
-            max-width: 420px;
-            background: white;
-            padding: 15px;
-            margin: 0 auto;
-            border: 1px solid #ddd;
+        .page {
+            position: relative;
+            padding: 18px 14px 10px;
         }
 
-        .receipt-header {
+        .watermark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0.08;
+            z-index: 0;
+        }
+
+        .watermark img {
+            width: 230px;
+            height: auto;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .letterhead {
             text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
-        .receipt-header h1 {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 2px;
+        .institution-name {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
         }
 
-        .receipt-header p {
+        .institution-address {
+            margin-top: 2px;
             font-size: 9px;
-            color: #666;
+            color: #444;
         }
 
-        .receipt-info {
-            margin-bottom: 12px;
-            font-size: 10px;
+        .letterhead-rule {
+            border-top: 1.6px solid #111;
+            margin: 10px 0 10px;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
+        .report-title {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
         }
 
-        .info-label {
-            font-weight: bold;
-            min-width: 80px;
-        }
-
-        .info-value {
-            text-align: right;
-            flex: 1;
-            padding-left: 8px;
-            word-break: break-word;
-        }
-
-        table {
+        .meta-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
-            font-size: 10px;
         }
 
-        table thead {
-            background-color: #f0f0f0;
-            border-top: 1px solid #333;
-            border-bottom: 1px solid #333;
+        .meta-table td {
+            padding: 1px 0;
+            vertical-align: top;
         }
 
-        table th {
-            padding: 4px 2px;
-            text-align: left;
-            font-weight: bold;
+        .meta-label {
+            width: 92px;
+            white-space: nowrap;
+        }
+
+        .meta-separator {
+            width: 8px;
+            text-align: center;
+        }
+
+        .meta-value {
+            word-break: break-word;
+        }
+
+        .summary-box {
+            border: 1px solid #111;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .summary-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-grid td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #111;
+        }
+
+        .summary-grid tr:last-child td {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            width: 118px;
+            font-weight: 700;
+        }
+
+        .summary-value {
+            width: auto;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
             font-size: 9px;
         }
 
-        table td {
-            padding: 4px 2px;
-            border-bottom: 1px solid #eee;
+        .items-table th,
+        .items-table td {
+            border: 1px solid #111;
+            padding: 4px 5px;
+            vertical-align: top;
         }
 
-        table tbody tr:last-child td {
-            border-bottom: 1px solid #333;
+        .items-table thead th {
+            background: #efefef;
+            font-weight: 700;
+            text-align: center;
         }
 
-        .item-no {
+        .col-no {
             width: 20px;
             text-align: center;
         }
 
-        .item-name {
-            flex: 1;
-            word-break: break-word;
+        .col-name {
+            width: auto;
         }
 
-        .item-qty {
-            width: 40px;
+        .col-qty {
+            width: 44px;
             text-align: center;
         }
 
-        .item-satuan {
-            width: 35px;
+        .col-unit {
+            width: 46px;
             text-align: center;
-        }
-
-        .receipt-footer {
-            margin-top: 15px;
-            text-align: center;
-            border-top: 2px solid #333;
-            padding-top: 8px;
-        }
-
-        .footer-text {
-            font-size: 9px;
-            color: #666;
-            margin-bottom: 3px;
-        }
-
-        .signature-section {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 20px;
-            font-size: 9px;
-        }
-
-        .signature-box {
-            text-align: center;
-            width: 150px;
-        }
-
-        .signature-line {
-            border-top: 1px solid #333;
-            width: 100%;
-            margin: 40px 0 5px;
-        }
-
-        .print-date {
-            text-align: right;
-            font-size: 9px;
-            color: #666;
-            margin-top: 10px;
-            border-top: 1px solid #ddd;
-            padding-top: 5px;
-        }
-
-        .divider {
-            border-top: 1px dashed #999;
-            margin: 10px 0;
         }
 
         .notes {
+            margin-top: 6px;
             font-size: 9px;
-            color: #666;
-            margin-top: 8px;
-            padding: 5px;
-            background-color: #f9f9f9;
-            border-left: 3px solid #007bff;
+            line-height: 1.4;
+        }
+
+        .notes-title {
+            font-weight: 700;
+        }
+
+        .sign-wrap {
+            width: 100%;
+            margin-top: 18px;
+        }
+
+        .sign-space {
+            float: left;
+            width: 58%;
+            min-height: 120px;
+        }
+
+        .sign-box {
+            float: right;
+            width: 38%;
+            text-align: center;
+            font-size: 9px;
+            padding-top: 8px;
+        }
+
+        .sign-date {
+            margin-bottom: 10px;
+        }
+
+        .sign-greeting {
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .sign-line {
+            margin-top: 0;
+            border-top: none;
+            height: 28px;
+        }
+
+        .sign-name {
+            margin-top: 4px;
+            font-weight: 700;
+        }
+
+        .print-footer {
+            margin-top: 10px;
+            text-align: left;
+            font-size: 9px;
+            color: #444;
+        }
+
+        .clearfix::after {
+            content: "";
+            display: block;
+            clear: both;
         }
 
         @media print {
             body {
-                background: white;
+                background: #fff;
             }
-            .receipt-container {
+
+            .page {
                 border: none;
-                box-shadow: none;
             }
         }
     </style>
 </head>
 <body>
-    <div class="receipt-container">
-        <!-- Header -->
-        <div class="receipt-header">
-            <h1>Bukti Pengeluaran Obat</h1>
-            <p>{{ config('app.name', 'PustumedApp') }}</p>
-        </div>
+    <div class="page">
+        <div class="content">
+            <div class="letterhead">
+                <div class="institution-name">PUSKESMAS PEMBANTU MOJOSULUR</div>
+                <div class="institution-address">Jl. KH. Wahid Hasyim, Tegal Dadi, Mojosulur, Kec. Mojosari, Kabupaten Mojokerto, Jawa Timur 61382</div>
+            </div>
 
-        <!-- Transaction Info -->
-        <div class="receipt-info">
-            <div class="info-row">
-                <span class="info-label">No. Transaksi</span>
-                <span class="info-value">#{{ str_pad($pengeluaran->id, 4, '0', STR_PAD_LEFT) }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Tanggal</span>
-                <span class="info-value">{{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->translatedFormat('d F Y') }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Nama Petugas</span>
-                <span class="info-value">{{ $pengeluaran->user->name ?? '-' }}</span>
-            </div>
-        </div>
+            <div class="letterhead-rule"></div>
 
-        <div class="divider"></div>
+            <div class="report-title">Bukti Pengeluaran Obat</div>
 
-        <!-- Patient & Doctor Info -->
-        <div class="receipt-info">
-            <div class="info-row">
-                <span class="info-label">Pasien</span>
-                <span class="info-value">{{ $pengeluaran->pasien->nama ?? '-' }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">No. BPJS</span>
-                <span class="info-value">{{ $pengeluaran->pasien->no_bpjs ?? '-' }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Dokter</span>
-                <span class="info-value">{{ $pengeluaran->dokter->nama ?? '-' }}</span>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Items Table -->
-        <table>
-            <thead>
+            <table class="meta-table">
                 <tr>
-                    <th class="item-no">No</th>
-                    <th class="item-name">Nama Obat</th>
-                    <th class="item-qty">Jumlah</th>
-                    <th class="item-satuan">Satuan</th>
+                    <td class="meta-label">No. Transaksi</td>
+                    <td class="meta-separator">:</td>
+                    <td class="meta-value">#{{ str_pad($pengeluaran->id, 4, '0', STR_PAD_LEFT) }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @forelse($pengeluaran->detailPengeluaranObat as $index => $detail)
+                <tr>
+                    <td class="meta-label">Tanggal</td>
+                    <td class="meta-separator">:</td>
+                    <td class="meta-value">{{ $tanggalPengeluaran->translatedFormat('d F Y') }}</td>
+                </tr>
+                <tr>
+                    <td class="meta-label">Nama Petugas</td>
+                    <td class="meta-separator">:</td>
+                    <td class="meta-value">{{ $pengeluaran->user->name ?? '-' }}</td>
+                </tr>
+            </table>
+
+            <div class="summary-box">
+                <table class="summary-grid">
                     <tr>
-                        <td class="item-no">{{ $index + 1 }}</td>
-                        <td class="item-name">{{ $detail->namaObat->nama_obat ?? '-' }}</td>
-                        <td class="item-qty">{{ $detail->jumlah_keluar }}</td>
-                        <td class="item-satuan">{{ $detail->satuan->satuan_obat ?? '-' }}</td>
+                        <td class="summary-label">Pasien</td>
+                        <td class="summary-value">{{ $pengeluaran->pasien->nama ?? '-' }}</td>
                     </tr>
-                @empty
                     <tr>
-                        <td colspan="4" style="text-align: center;">Tidak ada item</td>
+                        <td class="summary-label">No. BPJS</td>
+                        <td class="summary-value">{{ $pengeluaran->pasien->no_bpjs ?? '-' }}</td>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        <!-- Notes -->
-        @if($pengeluaran->keterangan)
-            <div class="notes">
-                <strong>Keterangan:</strong><br>
-                {{ $pengeluaran->keterangan }}
+                    <tr>
+                        <td class="summary-label">Dokter</td>
+                        <td class="summary-value">{{ $pengeluaran->dokter->nama ?? '-' }}</td>
+                    </tr>
+                </table>
             </div>
-        @endif
 
-        <!-- Footer -->
-        <div class="receipt-footer">
-            <p class="footer-text">Terima kasih telah mempercayakan kesehatan Anda kepada kami</p>
-        </div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th class="col-no">No</th>
+                        <th class="col-name">Nama Obat</th>
+                        <th class="col-qty">Jumlah</th>
+                        <th class="col-unit">Satuan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($pengeluaran->detailPengeluaranObat as $index => $detail)
+                        <tr>
+                            <td class="col-no">{{ $index + 1 }}</td>
+                            <td class="col-name">{{ $detail->namaObat->nama_obat ?? '-' }}</td>
+                            <td class="col-qty">{{ $detail->jumlah_keluar }}</td>
+                            <td class="col-unit">{{ $detail->satuan->satuan_obat ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 8px 5px;">Tidak ada item</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
 
-        <!-- Signatures -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <p>Kepala Pustu</p>
-                <div class="signature-line"></div>
-                <p style="margin-top: 3px;"></p>
+            @if($pengeluaran->keterangan)
+                <div class="notes">
+                    <span class="notes-title">Keterangan:</span>
+                    <span>{{ $pengeluaran->keterangan }}</span>
+                </div>
+            @endif
+
+            <div class="sign-wrap clearfix">
+                <div class="sign-space"></div>
+                <div class="sign-box">
+                    <div class="sign-date">Mojosulur, {{ $printNow->translatedFormat('d F Y') }}</div>
+                    <div class="sign-greeting">Mengetahui,</div>
+                    <div class="sign-line"></div>
+                    <div class="sign-name">Kepala Pustu</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Print Date -->
-        <div class="print-date">
-            Dicetak: {{ \Carbon\Carbon::now()->translatedFormat('d F Y H:i:s') }}
+            <div class="print-footer">
+                Dicetak: {{ $printNow->translatedFormat('d F Y H:i:s') }}
+            </div>
         </div>
     </div>
 </body>

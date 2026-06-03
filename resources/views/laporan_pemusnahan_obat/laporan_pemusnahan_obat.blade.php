@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Laporan Pemusnahan Obat - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -49,12 +50,12 @@
                             <input type="hidden" name="sort_by" value="{{ request('sort_by', 'tanggal_pemusnahan') }}">
                             <input type="hidden" name="direction" value="{{ request('direction', 'desc') }}">
 
-                            <button type="submit" class="btn-filter">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            <a href="{{ route('laporan-pemusnahan-obat.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                                 </svg>
-                                <span>Cari</span>
-                            </button>
+                                <span>Reset</span>
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -90,7 +91,6 @@
                                 </th>
                                 <th>Pengaju</th>
                                 <th>Status</th>
-                                <th>Penyetuju</th>
                                 <th>Keterangan</th>
                                 <th>Bukti Foto</th>
                             </tr>
@@ -102,15 +102,20 @@
                                     <td>{{ $pemusnahan['nama_obat'] }}</td>
                                     <td>
                                         @if($pemusnahan['tanggal_kadaluwarsa'])
-                                            {{ \Carbon\Carbon::parse($pemusnahan['tanggal_kadaluwarsa'])->translatedFormat('d F Y') }}
+                                            {{ \Carbon\Carbon::parse($pemusnahan['tanggal_kadaluwarsa'])->locale('id')->translatedFormat('d F Y') }}
                                         @else
                                             N/A
                                         @endif
                                     </td>
-                                    <td>{{ $pemusnahan['tanggal_pemusnahan'] ?? 'N/A' }}</td>
+                                    <td>
+                                        @if(!empty($pemusnahan['tanggal_pemusnahan']))
+                                            {{ \Carbon\Carbon::parse($pemusnahan['tanggal_pemusnahan'])->locale('id')->translatedFormat('d F Y') }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
                                     <td>{{ $pemusnahan['pengaju'] ?? 'N/A' }}</td>
                                     <td><span class="status-pill {{ strtolower($pemusnahan['status']) }}">{{ ($pemusnahan['status'] ?? 'pending') === 'approved' ? 'Sudah Dimusnahkan' : 'Belum Dimusnahkan' }}</span></td>
-                                    <td>{{ $pemusnahan['approver'] ?? 'N/A' }}</td>
                                     <td>{{ $pemusnahan['keterangan'] ?? '-' }}</td>
                                     <td>
                                         @if(!empty($pemusnahan['bukti_foto']))
@@ -122,7 +127,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="empty">Tidak ada data pemusnahan obat.</td>
+                                    <td colspan="8" class="empty">Tidak ada data pemusnahan obat.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -157,5 +162,40 @@
     </div>
 
 
+<script>
+    (function() {
+        const filterForm = document.querySelector('.table-actions form[method="GET"]');
+        if (!filterForm) return;
+
+        const searchField = filterForm.querySelector('input[name="search"]');
+        const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+        let filterDebounceTimer = null;
+
+        const submitFilter = () => filterForm.submit();
+        const submitFilterDebounced = (delay = 450) => {
+            if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+            filterDebounceTimer = setTimeout(submitFilter, delay);
+        };
+
+        if (searchField) {
+            searchField.addEventListener('input', function() {
+                submitFilterDebounced(500);
+            });
+
+            searchField.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitFilterDebounced(0);
+                }
+            });
+        }
+
+        filterFields.forEach(function(field) {
+            field.addEventListener('change', function() {
+                submitFilterDebounced(250);
+            });
+        });
+    })();
+</script>
 </body>
 </html>

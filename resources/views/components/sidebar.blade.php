@@ -145,20 +145,27 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('pemusnahan-obat.index') }}" title="Pemusnahan Obat">
+                    <a href="{{ route('pemusnahan-obat.index') }}" title="Pemusnahan Obat" class="sidebar-link-with-badge {{ request()->routeIs('pemusnahan-obat.*') ? 'active' : '' }}">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                         </svg>
                         <span>Pemusnahan Obat</span>
+                        @if(($sidebarPendingPemusnahanCount ?? 0) > 0)
+                            <span class="sidebar-badge" aria-label="{{ $sidebarPendingPemusnahanCount }} pengajuan pemusnahan menunggu persetujuan">
+                                {{ $sidebarPendingPemusnahanCount > 99 ? '99+' : $sidebarPendingPemusnahanCount }}
+                            </span>
+                        @endif
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('permintaan-obat.index') }}" title="Permintaan Obat" class="{{ request()->routeIs('permintaan-obat.*') ? 'active' : '' }}">
+                    @if(auth()->check() && auth()->user()->role === 'super_admin')
+                    <a href="{{ route('min-max.index') }}" title="Min Max" class="{{ request()->routeIs('min-max.*') ? 'active' : '' }}">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0 0 12 2.25Z" />
                         </svg>
-                        <span>Permintaan Obat</span>
+                        <span>Hitung Min Max</span>
                     </a>
+                    @endif
                 </li>
             </ul>
         </div>
@@ -181,6 +188,16 @@
                 </svg>
             </button>
 
+            <ul class="sidebar-submenu">
+                <li>
+                    <a href="{{ route('permintaan-obat.index') }}" title="Permintaan Obat" class="{{ request()->routeIs('permintaan-obat.*') ? 'active' : '' }}">
+                        <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        <span>Laporan Permintaan Obat</span>
+                    </a>
+                </li>
+            </ul>
             <ul class="sidebar-submenu">
                 <li>
                     <a href="{{ route('laporan-obat-kadaluwarsa.index') }}" title="Laporan Obat Kadaluwarsa">

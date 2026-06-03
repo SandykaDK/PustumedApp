@@ -212,7 +212,7 @@ class PemusnahanObatController extends Controller
         $this->middleware('auth');
 
         $validated = $request->validate([
-            'tanggal_pemusnahan' => 'required|date',
+            'tanggal_pengajuan' => 'required|date',
             'keterangan' => 'nullable|string',
             'details' => 'required|array|min:1',
             'details.*.nama_obat_id' => 'required|exists:nama_obat,id',
@@ -224,7 +224,7 @@ class PemusnahanObatController extends Controller
 
         $p = PemusnahanObat::create([
             'user_id' => auth()->id(),
-            'tanggal_pemusnahan' => $validated['tanggal_pemusnahan'],
+            'tanggal_pengajuan' => Carbon::parse($validated['tanggal_pengajuan'])->setTime(now()->hour, now()->minute, now()->second),
             'status' => 'pending',
             'keterangan' => $validated['keterangan'] ?? null,
         ]);
@@ -330,7 +330,8 @@ class PemusnahanObatController extends Controller
             $p->bukti_foto = $path;
         }
 
-        $p->tanggal_pemusnahan = $request->input('tanggal_pemusnahan');
+        $p->tanggal_pemusnahan = Carbon::parse($request->input('tanggal_pemusnahan'))
+            ->setTime(now()->hour, now()->minute, now()->second);
         $p->status = 'dimusnahkan';
         $p->save();
 

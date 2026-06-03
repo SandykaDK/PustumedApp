@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Laporan Obat Kadaluwarsa</title>
     <style>
         @page { size: A4 portrait; margin: 15mm; }

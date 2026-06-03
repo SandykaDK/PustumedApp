@@ -24,24 +24,26 @@
 .permintaan-obat-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 1040px;
 }
 
 .permintaan-obat-table th {
-    text-align: left;
-    font-size: 13px;
-    color: #6b7280;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: 12px;
+    color: #374151;
+    padding: 10px 8px;
+    border: 1px solid #e5e7eb;
+    background: #f8fafc;
 }
 
 .permintaan-obat-table td {
-    padding: 10px 0;
-    border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
+    padding: 9px 8px;
+    border: 1px solid #eef2f7;
+    font-size: 13px;
 }
 
 .permintaan-obat-table tr:last-child td {
-    border-bottom: none;
+    border-bottom: 1px solid #eef2f7;
 }
 
 .permintaan-obat-table tbody tr:hover {
@@ -221,11 +223,114 @@
     border: 1px solid #e5e7eb;
     font-size: 14px;
     outline: none;
-    width: 140px;
+    width: 130px;
+}
+
+.month-year-input {
+    width: 180px;
 }
 
 .date-input:focus {
     border-color: #6366f1;
+}
+
+.confirm-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 10000;
+}
+
+.confirm-modal.is-open {
+    display: flex;
+}
+
+.confirm-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.74);
+    backdrop-filter: blur(4px);
+}
+
+.confirm-modal__panel {
+    position: relative;
+    width: min(100%, 420px);
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    z-index: 1;
+}
+
+.confirm-modal__icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #f97316;
+    margin-bottom: 14px;
+}
+
+.confirm-modal__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.confirm-modal__panel h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: #111827;
+}
+
+.confirm-modal__panel p {
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.confirm-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.confirm-modal__button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.confirm-modal__button:active {
+    transform: scale(0.98);
+}
+
+.confirm-modal__button--ghost {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.confirm-modal__button--ghost:hover {
+    background: #d1d5db;
+}
+
+.confirm-modal__button--primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.confirm-modal__button--primary:hover {
+    background: #1d4ed8;
 }
 
 /* Filter Button */
@@ -252,8 +357,42 @@
     background: #4338ca;
 }
 
+.btn-reset {
+    background: #6b7280;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-reset:hover {
+    background: #4b5563;
+}
+
+.btn-reset svg {
+    width: 16px;
+    height: 16px;
+}
+
 .btn-filter:active {
     transform: scale(0.97);
+}
+
+.btn-print {
+    background: #16a34a;
+}
+
+.btn-print:hover {
+    background: #15803d;
+}
+
+.permintaan-obat-table td:nth-child(1),
+.permintaan-obat-table td:nth-child(3),
+.permintaan-obat-table td:nth-child(4),
+.permintaan-obat-table td:nth-child(5),
+.permintaan-obat-table td:nth-child(6),
+.permintaan-obat-table td:nth-child(7),
+.permintaan-obat-table td:nth-child(8),
+.permintaan-obat-table td:nth-child(9) {
+    text-align: center;
 }
 
 /* SEARCH BAR */

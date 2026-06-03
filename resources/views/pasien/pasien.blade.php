@@ -15,6 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Daftar Pasien - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -65,12 +66,21 @@
                             >
                         </div>
 
-                        <button type="submit" class="btn-filter">
+                        <div class="date-input-group">
+                            <label for="status" class="date-label">Status</label>
+                            <select id="status" name="status" class="date-input">
+                                <option value="semua" {{ request('status', 'semua') == 'semua' ? 'selected' : '' }}>Semua</option>
+                                <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
+                                <option value="nonaktif" {{ request('status') == 'nonaktif' ? 'selected' : '' }}>Nonaktif</option>
+                            </select>
+                        </div>
+
+                        <a href="{{ route('pasien.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                             </svg>
-                            Cari
-                        </button>
+                            <span>Reset</span>
+                        </a>
                     </div>
                 </form>
 
@@ -87,13 +97,16 @@
             </div>
             <table class="pasien-table">
                 <thead>
-                <tr>
+                    <tr>
                     <th>No</th>
                     <x-sortable-th column="nama" label="Nama Pasien" />
                     <x-sortable-th column="nik" label="NIK" />
                     <x-sortable-th column="alamat" label="Alamat" />
+                    <x-sortable-th column="jenis_kelamin" label="Jenis Kelamin" />
+                    <x-sortable-th column="golongan_darah" label="Gol. Darah" />
                     <x-sortable-th column="no_telepon" label="No. Telepon" />
                     <x-sortable-th column="no_bpjs" label="No. BPJS" />
+                    <th>Status</th>
                     {{-- <x-sortable-th column="created_at" label="Tanggal Dibuat" /> --}}
                     <th>Action</th>
                 </tr>
@@ -106,8 +119,13 @@
                             <td>{{ $pasien->nama }}</td>
                             <td>{{ $pasien->nik }}</td>
                             <td>{{ $pasien->alamat }}</td>
+                            <td>{{ $pasien->jenis_kelamin }}</td>
+                            <td>{{ $pasien->golongan_darah }}</td>
                             <td>{{ $pasien->no_telepon }}</td>
                             <td>{{ $pasien->no_bpjs }}</td>
+                            <td>
+                                <span class="status-badge {{ $pasien->status === 'aktif' ? 'status-aktif' : 'status-nonaktif' }}">{{ $pasien->status === 'aktif' ? 'Aktif' : 'Nonaktif' }}</span>
+                            </td>
                             {{-- <td>{{ $pasien->created_at->format('d M Y') }}</td> --}}
                             <td>
                                 <div class="action-buttons">
@@ -115,7 +133,7 @@
                                         $historyPayload = $pasien->pengeluaranObat->map(function ($pengeluaran) {
                                             return [
                                                 'id' => $pengeluaran->id,
-                                                'tanggal' => $pengeluaran->tanggal_pengeluaran ? \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d M Y') : '-',
+                                                'tanggal' => $pengeluaran->tanggal_pengeluaran ? \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->locale('id')->translatedFormat('d F Y') : '-',
                                                 'tanggal_raw' => $pengeluaran->tanggal_pengeluaran ? \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('Y-m-d') : null,
                                                 'petugas' => $pengeluaran->user?->name ?? '-',
                                                 'dokter' => $pengeluaran->dokter?->nama ?? '-',
@@ -157,8 +175,11 @@
                                         data-nama="{{ $pasien->nama }}"
                                         data-nik="{{ $pasien->nik }}"
                                         data-alamat="{{ $pasien->alamat }}"
+                                        data-jenis-kelamin="{{ $pasien->jenis_kelamin }}"
+                                        data-golongan-darah="{{ $pasien->golongan_darah }}"
                                         data-no_telepon="{{ $pasien->no_telepon }}"
-                                        data-no_bpjs="{{ $pasien->no_bpjs }}">
+                                        data-no_bpjs="{{ $pasien->no_bpjs }}"
+                                        data-status="{{ $pasien->status }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24" stroke-width="1.5"
                                             stroke="currentColor">
@@ -204,7 +225,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="empty">Tidak ada data pasien</td>
+                            <td colspan="10" class="empty">Tidak ada data pasien</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -216,6 +237,7 @@
                     <div class="per-page-selector">
                         <form method="GET" action="{{ route('pasien.index') }}" class="per-page-form">
                             <input type="hidden" name="search" value="{{ request('search') }}">
+                            <input type="hidden" name="status" value="{{ request('status', 'semua') }}">
                             <input type="hidden" name="sort" value="{{ request('sort') }}">
                             <input type="hidden" name="direction" value="{{ request('direction') }}">
                             <label for="per_page_pasien" class="per-page-label">Tampilkan:</label>
@@ -258,7 +280,12 @@
                                 <option value="">Semua dokter</option>
                             </select>
                         </div>
-                        <button type="button" id="historyFilterReset" class="history-filter-reset">Reset Filter</button>
+                        <button type="button" id="historyFilterReset" class="history-filter-reset">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
+                            </svg>
+                            <span>Reset</span>
+                        </button>
                     </div>
 
                     <div class="table-wrapper history-table-wrapper">
@@ -307,39 +334,70 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('pasien.store') }}" method="POST" class="form-component">
-                        @csrf
 
-                        <div class="form-group">
-                            <label for="nama">Nama Pasien</label>
-                            <input id="nama" type="text" name="nama" value="{{ old('nama') }}" required>
-                        </div>
+                        <form action="{{ route('pasien.store') }}" method="POST" class="form-component">
+                            @csrf
 
-                        <div class="form-group">
-                            <label for="nik">NIK</label>
-                            <input id="nik" type="text" name="nik" value="{{ old('nik') }}" required>
-                        </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="nama">Nama Pasien</label>
+                                    <input id="nama" type="text" name="nama" value="{{ old('nama') }}" required>
+                                </div>
 
-                        <div class="form-group">
-                            <label for="alamat">Alamat</label>
-                            <input id="alamat" type="text" name="alamat" value="{{ old('alamat') }}" required>
-                        </div>
+                                <div class="form-group">
+                                    <label for="nik">NIK</label>
+                                    <input id="nik" type="text" name="nik" value="{{ old('nik') }}" required>
+                                </div>
 
-                        <div class="form-group">
-                            <label for="no_telepon">No. Telepon</label>
-                            <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
-                        </div>
+                                <div class="form-group">
+                                    <label for="jenis_kelamin">Jenis Kelamin</label>
+                                    <select id="jenis_kelamin" name="jenis_kelamin" required>
+                                        <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-Laki</option>
+                                        <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                                    </select>
+                                </div>
 
-                        <div class="form-group">
-                            <label for="no_bpjs">No. BPJS</label>
-                            <input id="no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
-                        </div>
+                                <div class="form-group">
+                                    <label for="golongan_darah">Golongan Darah</label>
+                                    <select id="golongan_darah" name="golongan_darah" required>
+                                        <option value="A" {{ old('golongan_darah') == 'A' ? 'selected' : '' }}>A</option>
+                                        <option value="B" {{ old('golongan_darah') == 'B' ? 'selected' : '' }}>B</option>
+                                        <option value="AB" {{ old('golongan_darah') == 'AB' ? 'selected' : '' }}>AB</option>
+                                        <option value="O" {{ old('golongan_darah') == 'O' ? 'selected' : '' }}>O</option>
+                                    </select>
+                                </div>
 
-                        <div class="form-actions modal-actions">
-                            <button type="button" class="btn-secondary" id="cancelCreatePasienModal">Batal</button>
-                            <button type="submit" class="btn-primary">Simpan</button>
-                        </div>
-                    </form>
+                                <div class="form-group">
+                                    <label for="no_bpjs">No. BPJS</label>
+                                    <input id="no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="no_telepon">No. Telepon</label>
+                                    <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                                </div>
+
+                                <div class="form-group form-group-full">
+                                    <label for="status_toggle">Status Akun</label>
+                                    <div class="toggle-switch">
+                                        <input type="hidden" id="status_hidden" name="status" value="{{ old('status', 'aktif') }}">
+                                        <input type="checkbox" id="status_toggle" value="aktif" {{ old('status', 'aktif') == 'aktif' ? 'checked' : '' }}>
+                                        <label for="status_toggle" class="toggle-slider"></label>
+                                        <span class="toggle-text">{{ old('status', 'aktif') == 'aktif' ? 'Aktif' : 'Nonaktif' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-group-full">
+                                    <label for="alamat">Alamat</label>
+                                    <textarea id="alamat" name="alamat" rows="3" required>{{ old('alamat') }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-actions modal-actions">
+                                <button type="button" class="btn-secondary" id="cancelCreatePasienModal">Batal</button>
+                                <button type="submit" class="btn-primary">Simpan</button>
+                            </div>
+                        </form>
                 </div>
             </div>
         </div>
@@ -369,29 +427,59 @@
                         @csrf
                         <input type="hidden" name="_method" value="PUT">
 
-                        <div class="form-group">
-                            <label for="edit_nama">Nama Pasien</label>
-                            <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}" required>
-                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="edit_nama">Nama Pasien</label>
+                                <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}" required>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="edit_nik">NIK</label>
-                            <input id="edit_nik" type="text" name="nik" value="{{ old('nik') }}" required>
-                        </div>
+                            <div class="form-group">
+                                <label for="edit_nik">NIK</label>
+                                <input id="edit_nik" type="text" name="nik" value="{{ old('nik') }}" required>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="edit_alamat">Alamat</label>
-                            <input id="edit_alamat" type="text" name="alamat" value="{{ old('alamat') }}" required>
-                        </div>
+                            <div class="form-group">
+                                <label for="edit_jenis_kelamin">Jenis Kelamin</label>
+                                <select id="edit_jenis_kelamin" name="jenis_kelamin" required>
+                                    <option value="L">Laki-laki</option>
+                                    <option value="P">Perempuan</option>
+                                </select>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="edit_no_telepon">No. Telepon</label>
-                            <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
-                        </div>
+                            <div class="form-group">
+                                <label for="edit_golongan_darah">Golongan Darah</label>
+                                <select id="edit_golongan_darah" name="golongan_darah" required>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="AB">AB</option>
+                                    <option value="O">O</option>
+                                </select>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="edit_no_bpjs">No. BPJS</label>
-                            <input id="edit_no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
+                            <div class="form-group">
+                                <label for="edit_no_bpjs">No. BPJS</label>
+                                <input id="edit_no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit_no_telepon">No. Telepon</label>
+                                <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                            </div>
+
+                            <div class="form-group form-group-full">
+                                <label for="edit_status_toggle">Status Akun</label>
+                                <div class="toggle-switch">
+                                    <input type="hidden" id="edit_status_hidden" name="status" value="aktif">
+                                    <input type="checkbox" id="edit_status_toggle" value="aktif">
+                                    <label for="edit_status_toggle" class="toggle-slider"></label>
+                                    <span class="toggle-text">Aktif</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group form-group-full">
+                                <label for="edit_alamat">Alamat</label>
+                                <textarea id="edit_alamat" name="alamat" rows="3" required>{{ old('alamat') }}</textarea>
+                            </div>
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -601,6 +689,26 @@
         const closeBtn = document.getElementById('closeCreatePasienModal');
         const cancelBtn = document.getElementById('cancelCreatePasienModal');
 
+        function initStatusSwitches() {
+            document.querySelectorAll('.toggle-switch input[type="checkbox"]').forEach(toggle => {
+                const hiddenInput = toggle.previousElementSibling;
+                const labelText = toggle.nextElementSibling ? toggle.nextElementSibling.nextElementSibling : null;
+
+                const updateStatusValue = () => {
+                    const value = toggle.checked ? 'aktif' : 'non-aktif';
+                    if (hiddenInput && hiddenInput.type === 'hidden') {
+                        hiddenInput.value = value;
+                    }
+                    if (labelText) {
+                        labelText.textContent = toggle.checked ? 'Aktif' : 'Nonaktif';
+                    }
+                };
+
+                updateStatusValue();
+                toggle.addEventListener('change', updateStatusValue);
+            });
+        }
+
         function openModal() {
             if (!modal) return;
             modal.classList.remove('hidden');
@@ -661,14 +769,29 @@
                 const namaEl = document.getElementById('edit_nama');
                 const nikEl = document.getElementById('edit_nik');
                 const alamatEl = document.getElementById('edit_alamat');
+                const jenisKelaminEl = document.getElementById('edit_jenis_kelamin');
+                const golonganDarahEl = document.getElementById('edit_golongan_darah');
                 if (namaEl) namaEl.value = data.nama || '';
                 if (nikEl) nikEl.value = data.nik || '';
                 if (alamatEl) alamatEl.value = data.alamat || '';
+                if (jenisKelaminEl) jenisKelaminEl.value = data.jenis_kelamin || '';
+                if (golonganDarahEl) golonganDarahEl.value = data.golongan_darah || '';
 
                 const teleponEl = document.getElementById('edit_no_telepon');
                 const bpjsEl = document.getElementById('edit_no_bpjs');
+                const statusToggle = document.getElementById('edit_status_toggle');
+                const statusHidden = document.getElementById('edit_status_hidden');
+                const statusText = statusToggle && statusToggle.nextElementSibling ? statusToggle.nextElementSibling.nextElementSibling : null;
                 if (teleponEl) teleponEl.value = data.no_telepon || '';
                 if (bpjsEl) bpjsEl.value = data.no_bpjs || '';
+                if (statusToggle && statusHidden) {
+                    const isActive = String(data.status || 'aktif') === 'aktif';
+                    statusToggle.checked = isActive;
+                    statusHidden.value = isActive ? 'aktif' : 'non-aktif';
+                    if (statusText) {
+                        statusText.textContent = isActive ? 'Aktif' : 'Nonaktif';
+                    }
+                }
             } catch (err) {
                 console.error('populateEditForm error:', err);
             }
@@ -677,14 +800,17 @@
         openEditButtons.forEach(btn => {
             btn.addEventListener('click', function() {
                 try {
-                    const data = {
-                        id: this.dataset.id,
-                        nama: this.dataset.nama,
-                        nik: this.dataset.nik,
-                        alamat: this.dataset.alamat,
-                        no_telepon: this.dataset.no_telepon || '',
-                        no_bpjs: this.dataset.no_bpjs || ''
-                    };
+                        const data = {
+                            id: this.dataset.id,
+                            nama: this.dataset.nama,
+                            nik: this.dataset.nik,
+                            alamat: this.dataset.alamat,
+                            jenis_kelamin: this.dataset.jenisKelamin || this.getAttribute('data-jenis-kelamin'),
+                            golongan_darah: this.dataset.golonganDarah || this.getAttribute('data-golongan-darah'),
+                            no_telepon: this.dataset.no_telepon || '',
+                            no_bpjs: this.dataset.no_bpjs || '',
+                            status: this.dataset.status || 'aktif'
+                        };
 
                     if (window.console && window.console.log) console.log('edit pasien clicked, id=', data.id);
 
@@ -715,8 +841,11 @@
                         nama: btn.dataset.nama,
                         nik: btn.dataset.nik,
                         alamat: btn.dataset.alamat,
+                        jenis_kelamin: btn.dataset.jenisKelamin || btn.getAttribute('data-jenis-kelamin'),
+                        golongan_darah: btn.dataset.golonganDarah || btn.getAttribute('data-golongan-darah'),
                         no_telepon: btn.dataset.no_telepon || '',
-                        no_bpjs: btn.dataset.no_bpjs || ''
+                        no_bpjs: btn.dataset.no_bpjs || '',
+                        status: btn.dataset.status || 'aktif'
                     };
                     populateEditForm(data);
                 }
@@ -725,13 +854,63 @@
                     if (oldInput.nama) document.getElementById('edit_nama').value = oldInput.nama;
                     if (oldInput.nik) document.getElementById('edit_nik').value = oldInput.nik;
                     if (oldInput.alamat) document.getElementById('edit_alamat').value = oldInput.alamat;
+                    if (oldInput.jenis_kelamin) document.getElementById('edit_jenis_kelamin').value = oldInput.jenis_kelamin;
+                    if (oldInput.golongan_darah) document.getElementById('edit_golongan_darah').value = oldInput.golongan_darah;
                     if (oldInput.no_telepon) document.getElementById('edit_no_telepon').value = oldInput.no_telepon;
                     if (oldInput.no_bpjs) document.getElementById('edit_no_bpjs').value = oldInput.no_bpjs;
+                    if (oldInput.status) {
+                        const statusToggle = document.getElementById('edit_status_toggle');
+                        const statusHidden = document.getElementById('edit_status_hidden');
+                        const statusText = statusToggle && statusToggle.nextElementSibling ? statusToggle.nextElementSibling.nextElementSibling : null;
+                        if (statusToggle && statusHidden) {
+                            const isActive = String(oldInput.status) === 'aktif';
+                            statusToggle.checked = isActive;
+                            statusHidden.value = isActive ? 'aktif' : 'non-aktif';
+                            if (statusText) {
+                                statusText.textContent = isActive ? 'Aktif' : 'Nonaktif';
+                            }
+                        }
+                    }
                 }
 
                 openEditModal();
             });
         }
+
+        // Auto submit filter form with debounce.
+        const filterForm = document.querySelector('.table-actions .filter-form');
+        if (filterForm) {
+            const searchField = filterForm.querySelector('input[name="search"]');
+            const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
+
+            filterFields.forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterDebounced(250);
+                });
+            });
+        }
+
+        initStatusSwitches();
 
     })();
 </script>

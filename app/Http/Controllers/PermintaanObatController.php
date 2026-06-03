@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\NamaObat;
+use App\Models\DetailPenerimaanObat;
 use App\Models\DetailPengeluaranObat;
+use App\Models\DetailPemusnahanObat;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -12,6 +15,61 @@ class PermintaanObatController extends Controller
 {
     public function index(Request $request)
     {
+        $now = Carbon::now();
+
+        $monthYearInput = (string) $request->get('month_year', '');
+        $isValidMonthYear = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthYearInput) === 1;
+
+        $maxYear = (int) $now->year + 1;
+        $minYear = (int) $now->year - 5;
+
+        if ($isValidMonthYear) {
+            [$pickedYear, $pickedMonth] = explode('-', $monthYearInput);
+            $selectedYear = (int) $pickedYear;
+            $selectedMonth = (int) $pickedMonth;
+        } else {
+            $selectedMonth = (int) $request->get('month', $now->month);
+            if ($selectedMonth < 1 || $selectedMonth > 12) {
+                $selectedMonth = (int) $now->month;
+            }
+
+            $selectedYear = (int) $request->get('year', $now->year);
+            if ($selectedYear < $minYear || $selectedYear > $maxYear) {
+                $selectedYear = (int) $now->year;
+            }
+        }
+
+        if ($selectedYear < $minYear || $selectedYear > $maxYear) {
+            $selectedYear = (int) $now->year;
+        }
+
+        $monthYearValue = sprintf('%04d-%02d', $selectedYear, $selectedMonth);
+
+        $monthStart = Carbon::create($selectedYear, $selectedMonth, 1)->startOfDay();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $isReportFinal = $now->greaterThanOrEqualTo($monthEnd->copy()->endOfDay());
+        $reportNotice = $isReportFinal
+            ? null
+            : 'Periode belum ditutup. Hasil cetak masih draft.';
+
+        $monthOptions = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+        $monthLabel = $monthOptions[$selectedMonth];
+
+        $yearOptions = range($maxYear, $minYear);
+
         $period = (int) $request->get('period', 30);
         $allowedPeriods = [7, 30, 90];
         if (!in_array($period, $allowedPeriods)) {
@@ -48,28 +106,125 @@ class PermintaanObatController extends Controller
 
         $search = $request->get('search', '');
 
-        $startDate = Carbon::now()->subDays($period)->startOfDay();
+        $startDate = $monthEnd->copy()->subDays($period - 1)->startOfDay();
 
-        $periodAverages = DetailPengeluaranObat::select('nama_obat_id',
-            DB::raw('SUM(jumlah_keluar) as total_keluar'),
-            DB::raw('COUNT(DISTINCT DATE(created_at)) as days_used')
+        $periodAverages = DetailPengeluaranObat::select(
+            'detail_pengeluaran_obat.nama_obat_id',
+            DB::raw('SUM(detail_pengeluaran_obat.jumlah_keluar) as total_keluar'),
+            DB::raw('COUNT(DISTINCT pengeluaran_obat.tanggal_pengeluaran) as days_used')
         )
-            ->where('created_at', '>=', $startDate)
-            ->groupBy('nama_obat_id')
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                $startDate->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->groupBy('detail_pengeluaran_obat.nama_obat_id')
             ->get()
             ->keyBy('nama_obat_id');
 
-        $namaObats = NamaObat::with(['minMax', 'stokObat'])->orderBy('nama_obat')->get();
+        $monthlyIncoming = DetailPenerimaanObat::select(
+            'detail_penerimaan_obat.nama_obat_id',
+            DB::raw('SUM(detail_penerimaan_obat.jumlah_masuk) as total_masuk')
+        )
+            ->join('penerimaan_obat', 'penerimaan_obat.id', '=', 'detail_penerimaan_obat.penerimaan_obat_id')
+            ->whereBetween('penerimaan_obat.tanggal_penerimaan', [
+                $monthStart->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->groupBy('detail_penerimaan_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
 
-        $items = $namaObats->map(function ($obat) use ($periodAverages, $leadTime, $bufferDays) {
-            $stock = (int) $obat->stokObat->sum('stok');
-            $minMax = $obat->minMax;
+        $monthlyUsage = DetailPengeluaranObat::select(
+            'detail_pengeluaran_obat.nama_obat_id',
+            DB::raw('SUM(detail_pengeluaran_obat.jumlah_keluar) as total_keluar')
+        )
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                $monthStart->toDateString(),
+                $monthEnd->toDateString(),
+            ])
+            ->groupBy('detail_pengeluaran_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $incomingBeforeMonth = DetailPenerimaanObat::select(
+            'detail_penerimaan_obat.nama_obat_id',
+            DB::raw('SUM(detail_penerimaan_obat.jumlah_masuk) as total_masuk')
+        )
+            ->join('penerimaan_obat', 'penerimaan_obat.id', '=', 'detail_penerimaan_obat.penerimaan_obat_id')
+            ->where('penerimaan_obat.tanggal_penerimaan', '<', $monthStart->toDateString())
+            ->groupBy('detail_penerimaan_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $usageBeforeMonth = DetailPengeluaranObat::select(
+            'detail_pengeluaran_obat.nama_obat_id',
+            DB::raw('SUM(detail_pengeluaran_obat.jumlah_keluar) as total_keluar')
+        )
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->where('pengeluaran_obat.tanggal_pengeluaran', '<', $monthStart->toDateString())
+            ->groupBy('detail_pengeluaran_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $pemusnahanMonthly = DetailPemusnahanObat::select(
+            'detail_pemusnahan_obat.nama_obat_id',
+            DB::raw('SUM(detail_pemusnahan_obat.jumlah) as total_dimusnahkan')
+        )
+            ->join('pemusnahan_obat', 'pemusnahan_obat.id', '=', 'detail_pemusnahan_obat.pemusnahan_obat_id')
+            ->whereIn('pemusnahan_obat.status', ['approved', 'dimusnahkan'])
+            ->whereRaw(
+                'DATE(COALESCE(pemusnahan_obat.approved_at, pemusnahan_obat.tanggal_pemusnahan, pemusnahan_obat.created_at)) BETWEEN ? AND ?',
+                [$monthStart->toDateString(), $monthEnd->toDateString()]
+            )
+            ->groupBy('detail_pemusnahan_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $pemusnahanBeforeMonth = DetailPemusnahanObat::select(
+            'detail_pemusnahan_obat.nama_obat_id',
+            DB::raw('SUM(detail_pemusnahan_obat.jumlah) as total_dimusnahkan')
+        )
+            ->join('pemusnahan_obat', 'pemusnahan_obat.id', '=', 'detail_pemusnahan_obat.pemusnahan_obat_id')
+            ->whereIn('pemusnahan_obat.status', ['approved', 'dimusnahkan'])
+            ->whereRaw(
+                'DATE(COALESCE(pemusnahan_obat.approved_at, pemusnahan_obat.tanggal_pemusnahan, pemusnahan_obat.created_at)) < ?',
+                [$monthStart->toDateString()]
+            )
+            ->groupBy('detail_pemusnahan_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $namaObats = NamaObat::with([
+            'minMaxRecords' => function ($builder) use ($selectedYear, $selectedMonth) {
+                $builder->where('periode_year', $selectedYear)
+                    ->where('periode_month', $selectedMonth);
+            },
+            'satuanObat',
+        ])->orderBy('nama_obat')->get();
+
+        $items = $namaObats->map(function ($obat) use ($periodAverages, $monthlyIncoming, $monthlyUsage, $incomingBeforeMonth, $usageBeforeMonth, $pemusnahanMonthly, $pemusnahanBeforeMonth, $leadTime, $bufferDays) {
+            $incomingBefore = (int) ($incomingBeforeMonth->get($obat->id)->total_masuk ?? 0);
+            $usageBefore = (int) ($usageBeforeMonth->get($obat->id)->total_keluar ?? 0);
+            $pemusnahanBefore = (int) ($pemusnahanBeforeMonth->get($obat->id)->total_dimusnahkan ?? 0);
+
+            $stokAwal = max(0, $incomingBefore - $usageBefore - $pemusnahanBefore);
+            // Kolom "Pemberian" menampilkan total stok masuk pada periode yang dipilih.
+            // Nilai ini dipakai untuk menghitung "Persediaan" = stok awal + pemberian.
+            $pemberian = (int) ($monthlyIncoming->get($obat->id)->total_masuk ?? 0);
+            $persediaan = $stokAwal + $pemberian;
+            $pemakaian = (int) ($monthlyUsage->get($obat->id)->total_keluar ?? 0);
+            $pemusnahan = (int) ($pemusnahanMonthly->get($obat->id)->total_dimusnahkan ?? 0);
+            $sisaStok = max(0, $persediaan - $pemakaian - $pemusnahan);
+
+            $minMax = $obat->minMaxRecords->first();
 
             $minimumStock = $minMax->minimum_stock ?? 0;
             $maximumStock = $minMax->maximum_stock ?? 0;
             $averageDailyUsage = $minMax->average_daily_usage ?? 0;
-            $maximumDailyUsage = $minMax->maximum_daily_usage ?? 0;
             $computedLeadTime = $minMax->lead_time ?? $leadTime;
+            $reorderPoint = (int) ($minMax->reorder_point ?? max($minimumStock, (int) ceil(($averageDailyUsage * $computedLeadTime) + $bufferDays)));
 
             $periodData = $periodAverages->get($obat->id);
             if ($periodData && $periodData->days_used > 0) {
@@ -78,15 +233,10 @@ class PermintaanObatController extends Controller
                 $periodAverage = round($averageDailyUsage, 2);
             }
 
-            $desiredLevel = max($minimumStock, ceil($periodAverage * $computedLeadTime + $bufferDays));
-            if ($maximumStock > 0) {
-                $desiredLevel = min($desiredLevel, $maximumStock);
-            }
-
-            if ($stock <= $minimumStock) {
+            if ($sisaStok <= $minimumStock) {
                 $status = 'butuh-restock';
                 $statusLabel = 'Butuh Restock';
-            } elseif ($stock <= max($minimumStock, intval($minimumStock + max(1, ($maximumStock - $minimumStock) * 0.25)))) {
+            } elseif ($sisaStok <= max($minimumStock, intval($minimumStock + max(1, ($maximumStock - $minimumStock) * 0.25)))) {
                 $status = 'warning';
                 $statusLabel = 'Warning';
             } else {
@@ -94,19 +244,25 @@ class PermintaanObatController extends Controller
                 $statusLabel = 'Aman';
             }
 
-            $recommendation = max(0, $desiredLevel - $stock);
-
             return [
                 'id' => $obat->id,
                 'nama_obat' => $obat->nama_obat,
-                'stok' => $stock,
+                'satuan' => $obat->satuanObat->satuan_obat ?? '-',
+                'stok_awal' => $stokAwal,
+                'pemberian' => $pemberian,
+                'persediaan' => $persediaan,
+                'pemakaian' => $pemakaian,
+                'pemusnahan' => $pemusnahan,
+                'sisa_stok' => $sisaStok,
+                'permintaan' => $reorderPoint,
+                'pemberian_pusat' => null,
                 'minimum_stock' => $minimumStock,
                 'maximum_stock' => $maximumStock,
                 'average_daily_usage' => round($averageDailyUsage, 2),
                 'period_average' => $periodAverage,
+                'reorder_point' => $reorderPoint,
                 'status' => $status,
                 'status_label' => $statusLabel,
-                'recommendation' => $recommendation,
                 'lead_time' => $computedLeadTime,
                 'buffer_days' => $bufferDays,
             ];
@@ -129,8 +285,28 @@ class PermintaanObatController extends Controller
         $items = $items->values();
 
         if ($request->has('print')) {
-            $pdf = \PDF::loadView('permintaan_obat.print_pdf', compact('items', 'period', 'leadTime', 'bufferDays', 'allowedPeriods', 'status', 'allowedStatuses', 'search'));
-            $pdf->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView(
+                'permintaan_obat.print_pdf',
+                compact(
+                    'items',
+                    'period',
+                    'leadTime',
+                    'bufferDays',
+                    'allowedPeriods',
+                    'status',
+                    'allowedStatuses',
+                    'search',
+                    'selectedMonth',
+                    'selectedYear',
+                    'monthLabel',
+                    'monthOptions',
+                    'monthStart',
+                    'monthEnd',
+                    'isReportFinal',
+                    'reportNotice'
+                )
+            );
+            $pdf->setPaper('a4', 'landscape');
             $filename = 'permintaan_obat_' . date('Y-m-d_His') . '.pdf';
 
             return $pdf->download($filename);
@@ -156,7 +332,31 @@ class PermintaanObatController extends Controller
             ]
         );
 
-        return view('permintaan_obat.permintaan_obat', compact('items', 'period', 'leadTime', 'bufferDays', 'allowedPeriods', 'status', 'allowedStatuses', 'search', 'perPage', 'perPageOption'));
+        return view(
+            'permintaan_obat.permintaan_obat',
+            compact(
+                'items',
+                'period',
+                'leadTime',
+                'bufferDays',
+                'allowedPeriods',
+                'status',
+                'allowedStatuses',
+                'search',
+                'perPage',
+                'perPageOption',
+                'selectedMonth',
+                'selectedYear',
+                'monthYearValue',
+                'monthLabel',
+                'monthOptions',
+                'yearOptions',
+                'monthStart',
+                'monthEnd',
+                'isReportFinal',
+                'reportNotice'
+            )
+        );
     }
 }
 

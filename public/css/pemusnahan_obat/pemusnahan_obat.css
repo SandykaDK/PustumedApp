@@ -168,6 +168,31 @@
     background: #4338ca;
 }
 
+.btn-reset {
+    background: #6b7280;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-filter.btn-reset {
+    background: #6b7280;
+    color: white;
+}
+
+.btn-reset:hover {
+    background: #4b5563;
+}
+
+.btn-filter.btn-reset:hover {
+    background: #4b5563;
+    color: white;
+}
+
+.btn-reset svg {
+    width: 16px;
+    height: 16px;
+}
+
 .btn-filter:active {
     transform: scale(0.97);
 }
@@ -401,13 +426,16 @@
 
 /* Modal meta layout for view modal */
 .pemusnahan-meta {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
     margin-bottom: 12px;
 }
 .pemusnahan-meta .meta-item {
-    min-width: 180px;
+    min-width: 0;
+}
+.pemusnahan-meta .meta-item--full {
+    grid-column: 1 / -1;
 }
 .pemusnahan-meta .meta-item label {
     display: block;

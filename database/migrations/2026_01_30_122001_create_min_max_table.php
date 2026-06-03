@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('min_max', function (Blueprint $table) {
             $table->id();
             $table->foreignId('nama_obat_id')->constrained('nama_obat')->onDelete('cascade');
+            $table->integer('periode_year');
+            $table->integer('periode_month');
             $table->decimal('average_daily_usage', 10,2);
             $table->integer('maximum_daily_usage');
             $table->integer('minimum_stock')->default(0);
@@ -19,6 +21,8 @@ return new class extends Migration
             $table->integer('reorder_point')->default(0);
             $table->integer('lead_time')->default(7);
             $table->timestamps();
+
+            $table->unique(['nama_obat_id', 'periode_year', 'periode_month'], 'min_max_periode_unique');
         });
     }
 

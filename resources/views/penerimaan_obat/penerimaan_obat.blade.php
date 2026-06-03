@@ -15,15 +15,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Penerimaan Obat - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" href="{{ asset('css/penerimaan_obat/penerimaan_obat.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/modal.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 </head>
 <body>
 
@@ -63,7 +64,7 @@
                             <input
                                 type="text"
                                 name="search"
-                                placeholder="Cari no. batch..."
+                                placeholder="Cari no. batch atau nama obat..."
                                 value="{{ request('search') }}"
                                 class="search-input"
                             >
@@ -92,18 +93,16 @@
                                 >
                             </div>
 
-                            <button type="submit" class="btn-filter">
+                            <a href="{{ route('penerimaan-obat.index') }}" class="btn-filter btn-reset">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                                 </svg>
-                                <span>Cari</span>
-                            </button>
+                                <span>Reset</span>
+                            </a>
                         </div>
                     </div>
                 </form>
 
-                <!-- BUTTON TAMBAH -->
                 <button type="button" id="openCreateModal" class="btn-add">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24" stroke-width="1.5"
@@ -117,7 +116,6 @@
             <table class="penerimaan-obat-table">
                 <thead>
                 <tr>
-                    <th>No</th>
                     <x-sortable-th column="no_batch" label="No. Batch" />
                     <x-sortable-th column="tanggal_penerimaan" label="Tanggal Penerimaan" />
                     <th>Nama Petugas</th>
@@ -128,19 +126,17 @@
 
                 <tbody>
                     @forelse ($penerimaanObats as $penerimaan)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $penerimaan->no_batch }}</td>
-                            <td>{{ $penerimaan->tanggal_penerimaan ? \Carbon\Carbon::parse($penerimaan->tanggal_penerimaan)->format('d M Y') : '-' }}</td>
+                        @php
+                            $usageCheck = $penerimaan->checkUsage();
+                        @endphp
+
+                        <tr class="penerimaan-main-row" data-penerimaan-id="{{ $penerimaan->id }}" role="button" tabindex="0" aria-expanded="false" aria-controls="detail-row-{{ $penerimaan->id }}">
+                            <td style="color: blue;">{{ $penerimaan->no_batch }}</td>
+                            <td>{{ $penerimaan->tanggal_penerimaan ? \Carbon\Carbon::parse($penerimaan->tanggal_penerimaan)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                             <td>{{ $penerimaan->user?->name ?? '-' }}</td>
                             <td>{{ $penerimaan->detailPenerimaanObat->count() }} item(s)</td>
                             <td>
                                 <div class="action-buttons">
-                                    @php
-                                        $usageCheck = $penerimaan->checkUsage();
-                                    @endphp
-
-                                    <!-- EDIT (open modal) -->
                                     <button type="button"
                                         class="action-btn edit openEditModal"
                                         title="Edit"
@@ -164,9 +160,7 @@
                                         </svg>
                                     </button>
 
-                                    <!-- DELETE (confirm-delete component) -->
                                     @if ($usageCheck['used'])
-                                        <!-- Button disabled with tooltip -->
                                         <button type="button"
                                             class="action-btn delete"
                                             disabled
@@ -217,20 +211,78 @@
                                         </button>
                                     </x-confirm-delete>
                                     @endif
+                                </div>
+                            </td>
+                        </tr>
 
+                        <tr class="penerimaan-detail-row hidden" id="detail-row-{{ $penerimaan->id }}">
+                            <td colspan="5">
+                                <div class="detail-panel">
+                                    @if ($penerimaan->detailPenerimaanObat->isNotEmpty())
+                                        <div class="detail-table-wrapper">
+                                            <table class="expanded-detail-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Nama Obat</th>
+                                                        <th>Jenis Obat</th>
+                                                        <th>Tanggal Kadaluwarsa</th>
+                                                        <th>Jumlah Masuk</th>
+                                                        <th>Satuan</th>
+                                                        <th>Lokasi Penyimpanan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($penerimaan->detailPenerimaanObat as $detail)
+                                                        <tr>
+                                                            <td>{{ $detail->namaObat?->nama_obat ?? '-' }}</td>
+                                                            <td>{{ $detail->jenisObat?->jenis_obat ?? '-' }}</td>
+                                                            <td>{{ $detail->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->tanggal_kadaluwarsa)->format('d M Y') : '-' }}</td>
+                                                            <td>{{ $detail->jumlah_masuk }}</td>
+                                                            <td>{{ $detail->satuan?->satuan_obat ?? '-' }}</td>
+                                                            <td>{{ $detail->lokasi_penyimpanan ?? '-' }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @else
+                                        <div class="detail-empty-state">Tidak ada detail obat pada penerimaan ini.</div>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="empty">Tidak ada data penerimaan obat</td>
+                                <td colspan="5" class="empty">Tidak ada data penerimaan obat</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
+
+                <div class="pagination-section">
+                    <div class="pagination-controls">
+                        <div class="per-page-selector">
+                            <form method="GET" action="{{ route('penerimaan-obat.index') }}" class="per-page-form">
+                                <input type="hidden" name="search" value="{{ request('search') }}">
+                                <input type="hidden" name="tanggal_awal" value="{{ request('tanggal_awal') }}">
+                                <input type="hidden" name="tanggal_akhir" value="{{ request('tanggal_akhir') }}">
+                                <input type="hidden" name="sort" value="{{ request('sort') }}">
+                                <input type="hidden" name="direction" value="{{ request('direction') }}">
+                                <label for="per_page_footer" class="per-page-label">Tampilkan:</label>
+                                <select name="per_page" id="per_page_footer" class="per-page-input" onchange="this.form.submit()">
+                                    <option value="10" {{ $perPage == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ $perPage == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="pagination-wrapper">
+                        {{ $penerimaanObats->appends(request()->query())->links() }}
+                    </div>
+                </div>
         </div>
 
-        <!-- Create Modal -->
         <div id="createPenerimaanModal" class="modal hidden" aria-hidden="true">
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="createPenerimaanTitle">
                 <div class="modal-header">
@@ -251,7 +303,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('penerimaan-obat.store') }}" method="POST" class="form-component">
+                    <form id="createPenerimaanForm" action="{{ route('penerimaan-obat.store') }}" method="POST" class="form-component">
                         @csrf
 
                         <div class="form-grid">
@@ -292,16 +344,16 @@
                             <button type="button" class="btn-add-detail" id="addDetailCreate">+ Tambah Item</button>
                         </div>
 
-                        <div class="form-actions modal-actions" style="margin-top: 16px;">
-                            <button type="button" class="btn-secondary" id="cancelCreatePenerimaanModal">Batal</button>
-                            <button type="submit" class="btn-primary">Simpan</button>
-                        </div>
                     </form>
+                </div>
+
+                <div class="modal-actions modal-footer-persistent">
+                    <button type="button" class="btn-secondary" id="cancelCreatePenerimaanModal">Batal</button>
+                    <button type="submit" class="btn-primary" form="createPenerimaanForm">Simpan</button>
                 </div>
             </div>
         </div>
 
-        <!-- Edit Modal -->
         <div id="editPenerimaanModal" class="modal hidden" aria-hidden="true">
             <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="editPenerimaanTitle">
                 <div class="modal-header">
@@ -355,20 +407,19 @@
                                             <th>Jumlah Masuk</th>
                                             <th>Satuan</th>
                                             <th>Lokasi Penyimpanan</th>
-                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="detailItemsEdit"></tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn-add-detail" id="addDetailEdit">+ Tambah Item</button>
                         </div>
 
-                        <div class="form-actions modal-actions" style="margin-top: 16px;">
-                            <button type="button" class="btn-secondary" id="cancelEditPenerimaanModal">Batal</button>
-                            <button type="submit" class="btn-primary">Simpan</button>
-                        </div>
                     </form>
+                </div>
+
+                <div class="modal-actions modal-footer-persistent modal-footer-hidden" aria-hidden="true">
+                    <button type="button" class="btn-secondary" id="cancelEditPenerimaanModal">Batal</button>
+                    <button type="submit" class="btn-primary" form="editPenerimaanForm">Simpan</button>
                 </div>
             </div>
         </div>
@@ -381,12 +432,10 @@
     const jenisobats = @json($jenisobats);
     const satuanobats = @json($satuanobats);
 
-    // Old input from previous request (for restoring form on validation errors)
     window.oldDetails = @json(old('details', []));
     window.oldEditPenerimaanId = @json(session('edit_penerimaan_obat_id'));
     window.oldInput = @json(session()->getOldInput());
 
-    // Helper function to get today's date in YYYY-MM-DD format
     function getTodayDate() {
         const today = new Date();
         const year = today.getFullYear();
@@ -395,7 +444,9 @@
         return `${year}-${month}-${day}`;
     }
 
-    function createDetailHTML(index, data = {}) {
+    function createDetailHTML(index, data = {}, options = {}) {
+        const showDelete = options.showDelete !== false;
+
         return `
             <tr class="detail-row" data-detail-index="${index}">
                 <td>
@@ -427,6 +478,7 @@
                 <td>
                     <input type="text" class="table-input" name="details[${index}][lokasi_penyimpanan]" value="${data.lokasi_penyimpanan || ''}" required readonly>
                 </td>
+                ${showDelete ? `
                 <td>
                     <button type="button" class="btn-delete-row" onclick="this.closest('tr').remove()" title="Hapus">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -434,12 +486,11 @@
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                     </button>
-                </td>
+                </td>` : ''}
             </tr>
         `;
     }
 
-    // handler extracted so it can be used by native and jQuery bindings
     function namaObatChangeHandler(e) {
         const select = e.target || e.currentTarget || (e && e.srcElement) || this;
         const detailIndex = select.dataset.detailIndex;
@@ -466,7 +517,6 @@
             if (lokasiInput) lokasiInput.value = '';
         }
 
-        // set lokasi value if available in option
         const lokasiVal = selectedOption ? (selectedOption.dataset.lokasi || '') : '';
         if (lokasiInput && lokasiVal) {
             lokasiInput.value = lokasiVal;
@@ -475,14 +525,12 @@
 
     function attachDetailEventListeners() {
         document.querySelectorAll('.nama-obat-select').forEach(select => {
-            // destroy select2 if present
             try {
                 if (window.jQuery && jQuery(select).hasClass('select2-hidden-accessible')) {
                     jQuery(select).select2('destroy');
                 }
             } catch (err) {}
 
-            // init select2 for searchable dropdown
             try {
                 if (window.jQuery) {
                     const $s = jQuery(select);
@@ -492,11 +540,9 @@
                 }
             } catch (err) {}
 
-            // native change handler
             select.removeEventListener('change', namaObatChangeHandler);
             select.addEventListener('change', namaObatChangeHandler);
 
-            // jQuery fallback binding for select2
             try {
                 if (window.jQuery) {
                     jQuery(select).off('change.pustumed').on('change.pustumed', function(e) { namaObatChangeHandler(e); });
@@ -505,8 +551,53 @@
         });
     }
 
+    function togglePenerimaanDetail(row) {
+        if (!row) return;
+
+        const penerimaanId = row.dataset.penerimaanId;
+        const detailRow = document.getElementById(`detail-row-${penerimaanId}`);
+        const icon = document.getElementById(`toggle-icon-${penerimaanId}`);
+        const expanded = row.getAttribute('aria-expanded') === 'true';
+
+        row.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        if (detailRow) {
+            detailRow.classList.toggle('hidden', expanded);
+        }
+        if (icon) {
+            icon.textContent = expanded ? '▸' : '▾';
+        }
+    }
+
     (function() {
-        // CREATE MODAL
+        const penerimaanTable = document.querySelector('.penerimaan-obat-table tbody');
+
+        if (penerimaanTable) {
+            penerimaanTable.addEventListener('click', function(e) {
+                const row = e.target.closest('.penerimaan-main-row');
+                if (!row) return;
+
+                if (e.target.closest('button, a, input, select, textarea, .select2-container, .action-buttons')) {
+                    return;
+                }
+
+                togglePenerimaanDetail(row);
+            });
+
+            penerimaanTable.addEventListener('keydown', function(e) {
+                const row = e.target.closest('.penerimaan-main-row');
+                if (!row) return;
+
+                if (e.target.closest('button, a, input, select, textarea, .select2-container, .action-buttons')) {
+                    return;
+                }
+
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    togglePenerimaanDetail(row);
+                }
+            });
+        }
+
         const openCreateBtn = document.getElementById('openCreateModal');
         const createModal = document.getElementById('createPenerimaanModal');
         const closeCreateBtn = document.getElementById('closeCreatePenerimaanModal');
@@ -532,7 +623,6 @@
         openCreateBtn && openCreateBtn.addEventListener('click', function() {
             createDetailIndex = 0;
             detailItemsCreateDiv.innerHTML = '';
-            // Add one empty detail item
             detailItemsCreateDiv.insertAdjacentHTML('beforeend', createDetailHTML(createDetailIndex));
             createDetailIndex++;
             attachDetailEventListeners();
@@ -558,13 +648,12 @@
         });
 
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !createModal.classList.contains('hidden')) closeCreateModal();
+            if (e.key === 'Escape' && createModal && !createModal.classList.contains('hidden')) closeCreateModal();
         });
 
         @if ($errors->any() && !session('edit_penerimaan_obat_id'))
             document.addEventListener('DOMContentLoaded', function() {
                 openCreateModal();
-                // Restore detail items from old input if available
                 if (window.oldDetails && window.oldDetails.length) {
                     detailItemsCreateDiv.innerHTML = '';
                     window.oldDetails.forEach((detail, idx) => {
@@ -576,7 +665,6 @@
             });
         @endif
 
-        // EDIT MODAL
         const editModal = document.getElementById('editPenerimaanModal');
         const openEditButtons = document.querySelectorAll('.openEditModal');
         const closeEditBtn = document.getElementById('closeEditPenerimaanModal');
@@ -591,6 +679,20 @@
             editModal.classList.remove('hidden');
             editModal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+
+            editModal.querySelectorAll('input, select, textarea, button:not(.modal-close)').forEach(field => {
+                if (field.closest('.modal-footer-hidden')) {
+                    field.hidden = true;
+                    return;
+                }
+
+                if (field.tagName === 'BUTTON') {
+                    field.disabled = true;
+                    return;
+                }
+
+                field.disabled = true;
+            });
         }
 
         function closeEditModal() {
@@ -615,7 +717,7 @@
                     detailItemsEditDiv.innerHTML = '';
                     editDetailIndex = 0;
                     details.forEach((detail, idx) => {
-                        detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail));
+                        detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail, { showDelete: false }));
                         editDetailIndex = idx + 1;
                     });
                     attachDetailEventListeners();
@@ -627,39 +729,34 @@
             });
         });
 
-            // If the server returned validation errors for an edit, restore the edit modal with old input
-            if (window.oldEditPenerimaanId) {
-                document.addEventListener('DOMContentLoaded', function() {
-                    try {
-                        // set form action
-                        editPenerimaanForm.action = '/penerimaan-obat/' + window.oldEditPenerimaanId;
+        if (window.oldEditPenerimaanId) {
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    editPenerimaanForm.action = '/penerimaan-obat/' + window.oldEditPenerimaanId;
 
-                        // restore tanggal_penerimaan from old input if present
-                        if (window.oldInput && window.oldInput.tanggal_penerimaan) {
-                            document.getElementById('edit_tanggal_penerimaan').value = window.oldInput.tanggal_penerimaan;
-                        }
-
-                        // restore keterangan from old input if present
-                        if (window.oldInput && window.oldInput.keterangan) {
-                            document.getElementById('edit_keterangan').value = window.oldInput.keterangan;
-                        }
-
-                        // restore details from old input
-                        if (window.oldDetails && window.oldDetails.length) {
-                            detailItemsEditDiv.innerHTML = '';
-                            window.oldDetails.forEach((detail, idx) => {
-                                detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail));
-                                editDetailIndex = idx + 1;
-                            });
-                            attachDetailEventListeners();
-                        }
-
-                        openEditModal();
-                    } catch (err) {
-                        console.error('restore edit modal error:', err);
+                    if (window.oldInput && window.oldInput.tanggal_penerimaan) {
+                        document.getElementById('edit_tanggal_penerimaan').value = window.oldInput.tanggal_penerimaan;
                     }
-                });
-            }
+
+                    if (window.oldInput && window.oldInput.keterangan) {
+                        document.getElementById('edit_keterangan').value = window.oldInput.keterangan;
+                    }
+
+                    if (window.oldDetails && window.oldDetails.length) {
+                        detailItemsEditDiv.innerHTML = '';
+                        window.oldDetails.forEach((detail, idx) => {
+                            detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail, { showDelete: false }));
+                            editDetailIndex = idx + 1;
+                        });
+                        attachDetailEventListeners();
+                    }
+
+                    openEditModal();
+                } catch (err) {
+                    console.error('restore edit modal error:', err);
+                }
+            });
+        }
 
         addDetailEditBtn && addDetailEditBtn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -675,6 +772,38 @@
             if (e.target === editModal) closeEditModal();
         });
 
+        // Auto submit filter form with debounce.
+        const filterForm = document.querySelector('.table-actions form[method="GET"]');
+        if (filterForm) {
+            const searchField = filterForm.querySelector('input[name="search"]');
+            const filterFields = filterForm.querySelectorAll('input[type="date"], select');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
+
+            filterFields.forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterDebounced(250);
+                });
+            });
+        }
     })();
 </script>
 

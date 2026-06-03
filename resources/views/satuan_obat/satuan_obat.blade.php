@@ -15,6 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Satuan Obat - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -62,6 +63,13 @@
                             value="{{ request('search') }}"
                             class="search-input"
                         >
+
+                        <a href="{{ route('satuan-obat.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
+                            </svg>
+                            <span>Reset</span>
+                        </a>
                     </div>
                 </form>
 
@@ -118,9 +126,8 @@
                                         </svg>
                                     </button>
 
-                                    <!-- DELETE (confirm-delete component) -->
-                                    <x-confirm-delete action="{{ route('satuan-obat.destroy', $satuanobat->id) }}" :id="'delete-satuan-'.$satuanobat->id" title="Hapus Satuan" message="Yakin ingin menghapus satuan obat {{ $satuanobat->satuan_obat }}?">
-                                        <button type="button" class="action-btn delete" title="Hapus">
+                                    @if ($satuanobat->nama_obat_count > 0)
+                                        <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus karena sudah digunakan pada daftar obat" disabled>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
@@ -141,7 +148,32 @@
                                                     v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
                                         </button>
-                                    </x-confirm-delete>
+                                    @else
+                                        <!-- DELETE (confirm-delete component) -->
+                                        <x-confirm-delete action="{{ route('satuan-obat.destroy', $satuanobat->id) }}" :id="'delete-satuan-'.$satuanobat->id" title="Hapus Satuan" message="Yakin ingin menghapus satuan obat {{ $satuanobat->satuan_obat }}?">
+                                            <button type="button" class="action-btn delete" title="Hapus">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m14.74 9-.346 9m-4.788 0
+                                                        L9.26 9m9.968-3.21c.342.052.682.107
+                                                        1.022.166m-1.022-.165L18.16 19.673
+                                                        a2.25 2.25 0 0 1-2.244 2.077H8.084
+                                                        a2.25 2.25 0 0 1-2.244-2.077
+                                                        L4.772 5.79m14.456 0
+                                                        a48.108 48.108 0 0 0-3.478-.397
+                                                        m-12 .562c.34-.059.68-.114
+                                                        1.022-.165m0 0a48.11 48.11 0 0 1
+                                                        3.478-.397m7.5 0v-.916
+                                                        c0-1.18-.91-2.164-2.09-2.201
+                                                        a51.964 51.964 0 0 0-3.32 0
+                                                        c-1.18.037-2.09 1.022-2.09 2.201
+                                                        v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </x-confirm-delete>
+                                    @endif
 
                                 </div>
                             </td>
@@ -377,6 +409,32 @@
 
                 openEditModal();
             });
+        }
+
+        // Auto submit filter form with debounce.
+        const filterForm = document.querySelector('.table-actions form[method="GET"]');
+        if (filterForm) {
+            const searchField = filterForm.querySelector('input[name="search"]');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
         }
 
     })();

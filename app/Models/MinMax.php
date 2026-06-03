@@ -10,6 +10,8 @@ class MinMax extends Model
 
     protected $fillable = [
         'nama_obat_id',
+        'periode_year',
+        'periode_month',
         'average_daily_usage',
         'maximum_daily_usage',
         'minimum_stock',

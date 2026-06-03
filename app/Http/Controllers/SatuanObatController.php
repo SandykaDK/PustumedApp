@@ -28,6 +28,7 @@ class SatuanObatController extends Controller
                 ->orWhere('satuan_obat', 'like', "%$search%");
             });
         })
+        ->withCount('namaObat')
         ->orderBy($sort, $direction)
         ->paginate($perPage);
 
@@ -93,6 +94,12 @@ class SatuanObatController extends Controller
 
     public function destroy(SatuanObat $satuan_obat)
     {
+        if ($satuan_obat->namaObat()->exists()) {
+            return redirect()
+                ->route('satuan-obat.index')
+                ->with('error', 'Satuan Obat tidak bisa dihapus karena sudah digunakan pada Daftar Obat.');
+        }
+
         $satuan_obat->delete();
 
         return redirect()

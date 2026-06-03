@@ -15,6 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Daftar Obat - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -23,8 +24,12 @@
     <link rel="stylesheet" href="{{ asset('css/components/modal.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 </head>
 <body>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <x-sidebar />
 
@@ -85,12 +90,12 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn-filter">
+                        <a href="{{ route('nama-obat.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                             </svg>
-                            Cari
-                        </button>
+                            <span>Reset</span>
+                        </a>
                     </div>
                 </form>
 
@@ -173,9 +178,17 @@
                                         </svg>
                                     </button>
 
-                                    <!-- DELETE (confirm-delete component) -->
-                                    <x-confirm-delete action="{{ route('nama-obat.destroy', $namaobat->id) }}" :id="'delete-nama-obat-'.$namaobat->id" title="Hapus Nama Obat" message="Yakin ingin menghapus nama obat {{ $namaobat->nama_obat }}?">
-                                        <button type="button" class="action-btn delete" title="Hapus">
+                                    @php
+                                        $isNamaObatUsed =
+                                            ($namaobat->detail_penerimaan_obat_count ?? 0) > 0 ||
+                                            ($namaobat->detail_pengeluaran_obat_count ?? 0) > 0 ||
+                                            ($namaobat->detail_pemusnahan_obat_count ?? 0) > 0 ||
+                                            ($namaobat->stok_obat_count ?? 0) > 0 ||
+                                            ($namaobat->min_max_count ?? 0) > 0;
+                                    @endphp
+
+                                    @if ($isNamaObatUsed)
+                                        <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus karena sudah digunakan pada transaksi/data lain" disabled>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
@@ -196,7 +209,32 @@
                                                     v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
                                         </button>
-                                    </x-confirm-delete>
+                                    @else
+                                        <!-- DELETE (confirm-delete component) -->
+                                        <x-confirm-delete action="{{ route('nama-obat.destroy', $namaobat->id) }}" :id="'delete-nama-obat-'.$namaobat->id" title="Hapus Nama Obat" message="Yakin ingin menghapus nama obat {{ $namaobat->nama_obat }}?">
+                                            <button type="button" class="action-btn delete" title="Hapus">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m14.74 9-.346 9m-4.788 0
+                                                        L9.26 9m9.968-3.21c.342.052.682.107
+                                                        1.022.166m-1.022-.165L18.16 19.673
+                                                        a2.25 2.25 0 0 1-2.244 2.077H8.084
+                                                        a2.25 2.25 0 0 1-2.244-2.077
+                                                        L4.772 5.79m14.456 0
+                                                        a48.108 48.108 0 0 0-3.478-.397
+                                                        m-12 .562c.34-.059.68-.114
+                                                        1.022-.165m0 0a48.11 48.11 0 0 1
+                                                        3.478-.397m7.5 0v-.916
+                                                        c0-1.18-.91-2.164-2.09-2.201
+                                                        a51.964 51.964 0 0 0-3.32 0
+                                                        c-1.18.037-2.09 1.022-2.09 2.201
+                                                        v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </x-confirm-delete>
+                                    @endif
 
                                 </div>
                             </td>
@@ -285,8 +323,8 @@
                             <input id="nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
                         </div>
                         <div class="form-group">
-                            <label for="jenis_obat_id">Jenis Obat</label>
-                            <select id="jenis_obat_id" name="jenis_obat_id" required>
+                            <label for="create_jenis_obat_id">Jenis Obat</label>
+                            <select id="create_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
                                 <option value="">Pilih Jenis Obat</option>
                                 @foreach(($jenisobats ?? []) as $jenis)
                                     <option value="{{ $jenis->id }}" {{ old('jenis_obat_id') == $jenis->id ? 'selected' : '' }}>{{ $jenis->jenis_obat }}</option>
@@ -295,8 +333,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="satuan_obat_id">Satuan Obat</label>
-                            <select id="satuan_obat_id" name="satuan_obat_id" required>
+                            <label for="create_satuan_obat_id">Satuan Obat</label>
+                            <select id="create_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat" required>
                                 <option value="">Pilih Satuan Obat</option>
                                 @foreach(($satuanobats ?? []) as $satuan)
                                     <option value="{{ $satuan->id }}" {{ old('satuan_obat_id') == $satuan->id ? 'selected' : '' }}>{{ $satuan->satuan_obat }}</option>
@@ -354,7 +392,7 @@
 
                         <div class="form-group">
                             <label for="edit_jenis_obat_id">Jenis Obat</label>
-                            <select id="edit_jenis_obat_id" name="jenis_obat_id" required>
+                            <select id="edit_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
                                 <option value="">Pilih Jenis Obat</option>
                                 @foreach(($jenisobats ?? []) as $jenis)
                                     <option value="{{ $jenis->id }}">{{ $jenis->jenis_obat }}</option>
@@ -364,7 +402,7 @@
 
                         <div class="form-group">
                             <label for="edit_satuan_obat_id">Satuan Obat</label>
-                            <select id="edit_satuan_obat_id" name="satuan_obat_id" required>
+                            <select id="edit_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat" required>
                                 <option value="">Pilih Satuan Obat</option>
                                 @foreach(($satuanobats ?? []) as $satuan)
                                     <option value="{{ $satuan->id }}">{{ $satuan->satuan_obat }}</option>
@@ -391,6 +429,25 @@
 
 <script>
     (function() {
+        function initModalSelect2(modalElement) {
+            if (!modalElement || !window.jQuery || !jQuery.fn.select2) return;
+
+            modalElement.querySelectorAll('.js-modal-select2').forEach(function(select) {
+                const $select = jQuery(select);
+
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    width: '100%',
+                    dropdownParent: jQuery(modalElement),
+                    placeholder: select.dataset.placeholder || 'Pilih',
+                    allowClear: false,
+                });
+            });
+        }
+
         // Create modal
         const openBtn = document.getElementById('openCreateModal');
         const modal = document.getElementById('createNamaObatModal');
@@ -402,6 +459,9 @@
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            window.requestAnimationFrame(function() {
+                initModalSelect2(modal);
+            });
         }
 
         function closeModal() {
@@ -441,6 +501,9 @@
             editModal.classList.remove('hidden');
             editModal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            window.requestAnimationFrame(function() {
+                initModalSelect2(editModal);
+            });
         }
 
         function closeEditModal() {
@@ -461,8 +524,18 @@
 
                 const jenisSelect = document.getElementById('edit_jenis_obat_id');
                 const satuanSelect = document.getElementById('edit_satuan_obat_id');
-                if (jenisSelect) jenisSelect.value = data.jenis_id || '';
-                if (satuanSelect) satuanSelect.value = data.satuan_id || '';
+                if (jenisSelect) {
+                    jenisSelect.value = data.jenis_id || '';
+                    if (window.jQuery) {
+                        jQuery(jenisSelect).trigger('change');
+                    }
+                }
+                if (satuanSelect) {
+                    satuanSelect.value = data.satuan_id || '';
+                    if (window.jQuery) {
+                        jQuery(satuanSelect).trigger('change');
+                    }
+                }
                 const lokasiEl = document.getElementById('edit_lokasi_penyimpanan');
                 if (lokasiEl) lokasiEl.value = data.lokasi || '';            } catch (err) {
                 console.error('populateEditForm error:', err);
@@ -533,6 +606,8 @@
                         if (oldLokasi) oldLokasi.value = oldInput.lokasi_penyimpanan;
                     }
                 }
+
+                initModalSelect2(editModal);
 
                 openEditModal();
             });
@@ -609,6 +684,39 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && !stockModal.classList.contains('hidden')) closeStockModal();
         });
+
+        // Auto submit filter form with debounce.
+        const filterForm = document.querySelector('.table-actions .filter-form');
+        if (filterForm) {
+            const searchField = filterForm.querySelector('input[name="search"]');
+            const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
+
+            filterFields.forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterDebounced(250);
+                });
+            });
+        }
 
     })();
 </script>

@@ -15,6 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Daftar Dokter - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -23,83 +24,6 @@
     <link rel="stylesheet" href="{{ asset('css/components/modal.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
-    <style>
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .toggle-switch input[type="checkbox"] {
-            display: none;
-        }
-
-        .toggle-slider {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: #d1d5db;
-            border-radius: 24px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .toggle-slider::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #fff;
-            transition: transform 0.3s;
-        }
-
-        .toggle-switch input:checked + .toggle-slider {
-            background: #10b981;
-        }
-
-        .toggle-switch input:checked + .toggle-slider::before {
-            transform: translateX(26px);
-        }
-
-        .toggle-text {
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .status-aktif {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .status-nonaktif {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .status-toggle-row {
-            margin-top: 8px;
-        }
-
-        .status-toggle-label {
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            transition: transform 0.2s ease;
-        }
-    </style>
 </head>
 <body>
 
@@ -136,7 +60,7 @@
                             <input
                                 type="text"
                                 name="search"
-                                placeholder="Cari nama dokter..."
+                                placeholder="Cari nama dokter atau email..."
                                 value="{{ request('search') }}"
                                 class="search-input"
                             >
@@ -151,15 +75,12 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn-filter">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                viewBox="0 0 24 24" stroke-width="1.5"
-                                stroke="currentColor" class="size-6">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        <a href="{{ route('dokter.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                             </svg>
-                            <span>Cari</span>
-                        </button>
+                            <span>Reset</span>
+                        </a>
                     </div>
                 </form>
 
@@ -180,7 +101,9 @@
                     <th>No</th>
                     <x-sortable-th column="nama" label="Nama Dokter" />
                     <x-sortable-th column="alamat" label="Alamat" />
+                    <x-sortable-th column="jenis_kelamin" label="Jenis Kelamin" />
                     <x-sortable-th column="no_telepon" label="No. Telepon" />
+                    <x-sortable-th column="email" label="Email" />
                     <x-sortable-th column="status" label="Status" />
                     <th>Action</th>
                 </tr>
@@ -192,7 +115,9 @@
                             <td>{{ $dokter->id }}</td>
                             <td>{{ $dokter->nama }}</td>
                             <td>{{ $dokter->alamat }}</td>
+                            <td>{{ $dokter->jenis_kelamin }}</td>
                             <td>{{ $dokter->no_telepon }}</td>
+                            <td>{{ $dokter->email }}</td>
                             <td>
                                 <span class="status-badge {{ ($dokter->status ?? 'aktif') === 'aktif' ? 'status-aktif' : 'status-nonaktif' }}">
                                     {{ ucfirst($dokter->status ?? 'aktif') }}
@@ -208,7 +133,9 @@
                                         data-id="{{ $dokter->id }}"
                                         data-nama="{{ $dokter->nama }}"
                                         data-alamat="{{ $dokter->alamat }}"
+                                        data-jenis-kelamin="{{ $dokter->jenis_kelamin }}"
                                         data-no_telepon="{{ $dokter->no_telepon }}"
+                                        data-email="{{ $dokter->email }}"
                                         data-status="{{ $dokter->status ?? 'aktif' }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24" stroke-width="1.5"
@@ -307,7 +234,7 @@
                     {{ $dokters->appends(request()->query())->links() }}
                 </div>
             </div>
-        </div>
+        {{-- </div> --}}
 
         <!-- Create Modal -->
         <div id="createDokterModal" class="modal hidden" aria-hidden="true">
@@ -344,8 +271,21 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="jenis_kelamin">Jenis Kelamin</label>
+                            <select id="jenis_kelamin" name="jenis_kelamin" required>
+                                <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-Laki</option>
+                                <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label for="no_telepon">No. Telepon</label>
                             <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input id="email" type="email" name="email" value="{{ old('email') }}" required>
                         </div>
 
                         <div class="form-group">
@@ -403,8 +343,21 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="edit_jenis_kelamin">Jenis Kelamin</label>
+                            <select id="edit_jenis_kelamin" name="jenis_kelamin" required>
+                                <option value="L">Laki-laki</option>
+                                <option value="P">Perempuan</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label for="edit_no_telepon">No. Telepon</label>
                             <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit_email">Email</label>
+                            <input id="edit_email" type="email" name="email" value="{{ old('email') }}" required>
                         </div>
 
                         <div class="form-group">
@@ -519,11 +472,15 @@
                 editForm.action = '/dokter/' + data.id;
                 const namaEl = document.getElementById('edit_nama');
                 const alamatEl = document.getElementById('edit_alamat');
+                const jenisKelaminEl = document.getElementById('edit_jenis_kelamin');
                 if (namaEl) namaEl.value = data.nama || '';
                 if (alamatEl) alamatEl.value = data.alamat || '';
+                if (jenisKelaminEl) jenisKelaminEl.value = data.jenis_kelamin || '';
 
                 const teleponEl = document.getElementById('edit_no_telepon');
+                const emailEl = document.getElementById('edit_email');
                 if (teleponEl) teleponEl.value = data.no_telepon || '';
+                if (emailEl) emailEl.value = data.email || '';
 
                 if (editStatusHidden) editStatusHidden.value = data.status || 'aktif';
                 if (editStatusToggle) editStatusToggle.checked = (data.status || 'aktif') === 'aktif';
@@ -540,7 +497,9 @@
                         id: this.dataset.id,
                         nama: this.dataset.nama,
                         alamat: this.dataset.alamat,
+                        jenis_kelamin: this.dataset.jenisKelamin || this.getAttribute('data-jenis-kelamin'),
                         no_telepon: this.dataset.no_telepon || '',
+                        email: this.dataset.email,
                         status: this.dataset.status || 'aktif',
                     };
 
@@ -572,7 +531,9 @@
                         id: btn.dataset.id,
                         nama: btn.dataset.nama,
                         alamat: btn.dataset.alamat,
+                        jenis_kelamin: btn.dataset.jenisKelamin || btn.getAttribute('data-jenis-kelamin'),
                         no_telepon: btn.dataset.no_telepon || '',
+                        email: btn.dataset.email,
                         status: btn.dataset.status || 'aktif',
                     };
                     populateEditForm(data);
@@ -581,7 +542,9 @@
                 if (oldInput && Object.keys(oldInput).length) {
                     if (oldInput.nama) document.getElementById('edit_nama').value = oldInput.nama;
                     if (oldInput.alamat) document.getElementById('edit_alamat').value = oldInput.alamat;
+                    if (oldInput.jenis_kelamin) document.getElementById('edit_jenis_kelamin').value = oldInput.jenis_kelamin;
                     if (oldInput.no_telepon) document.getElementById('edit_no_telepon').value = oldInput.no_telepon;
+                    if (oldInput.email) document.getElementById('edit_email').value = oldInput.email;
                     if (oldInput.status) {
                         if (editStatusHidden) editStatusHidden.value = oldInput.status;
                         if (editStatusToggle) editStatusToggle.checked = oldInput.status === 'aktif';
@@ -590,6 +553,39 @@
                 }
 
                 openEditModal();
+            });
+        }
+
+        // Auto submit filter form with debounce.
+        const filterForm = document.querySelector('.table-actions form[method="GET"]');
+        if (filterForm) {
+            const searchField = filterForm.querySelector('input[name="search"]');
+            const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
+
+            filterFields.forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterDebounced(250);
+                });
             });
         }
 

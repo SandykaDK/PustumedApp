@@ -12,7 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('nama')->unique();
             $table->string('alamat');
+            $table->enum('jenis_kelamin', ['L', 'P']);
             $table->string('no_telepon')->unique();
+            $email = $table->string('email')->unique();
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
             $table->timestamps();
         });

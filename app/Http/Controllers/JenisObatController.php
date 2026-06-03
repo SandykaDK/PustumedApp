@@ -27,6 +27,7 @@ class JenisObatController extends Controller
                 ->orWhere('jenis_obat', 'like', "%$search%");
             });
         })
+        ->withCount('namaObat')
         ->orderBy($sort, $direction)
         ->paginate($perPage);
 
@@ -93,6 +94,12 @@ class JenisObatController extends Controller
     // 👉 DELETE
     public function destroy(JenisObat $jenis_obat)
     {
+        if ($jenis_obat->namaObat()->exists()) {
+            return redirect()
+                ->route('jenis-obat.index')
+                ->with('error', 'Jenis Obat tidak bisa dihapus karena sudah digunakan pada Daftar Obat.');
+        }
+
         $jenis_obat->delete();
 
         return redirect()

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class PenerimaanObat extends Model
@@ -21,7 +22,20 @@ class PenerimaanObat extends Model
 
         static::creating(function ($model) {
             if (empty($model->no_batch)) {
-                $model->no_batch = 'BATCH-' . strtoupper(str()->random(8));
+                $batchPeriod = Carbon::parse($model->tanggal_penerimaan ?? now())->format('Ym');
+                $batchPrefix = 'BATCH-' . $batchPeriod;
+
+                $latestBatchNo = static::where('no_batch', 'like', $batchPrefix . '-%')
+                    ->orderByDesc('no_batch')
+                    ->value('no_batch');
+
+                $nextSequence = 1;
+
+                if ($latestBatchNo && preg_match('/^(?:BATCH-\d{6})-(\d{3})$/', $latestBatchNo, $matches)) {
+                    $nextSequence = ((int) $matches[1]) + 1;
+                }
+
+                $model->no_batch = sprintf('%s-%03d', $batchPrefix, $nextSequence);
             }
         });
     }

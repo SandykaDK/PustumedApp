@@ -33,6 +33,13 @@ class NamaObatController extends Controller
 
         $namaobats = NamaObat::with(['jenisObat', 'satuanObat'])
             ->withSum('stokObat as total_stok', 'stok')
+            ->withCount([
+                'detailPenerimaanObat',
+                'detailPengeluaranObat',
+                'detailPemusnahanObat',
+                'stokObat',
+                'minMax',
+            ])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('kode_obat', 'like', "%$search%")
@@ -154,6 +161,12 @@ class NamaObatController extends Controller
 
     public function destroy(NamaObat $nama_obat)
     {
+        if ($nama_obat->isInUse()) {
+            return redirect()
+                ->route('nama-obat.index')
+                ->with('error', 'Nama Obat tidak bisa dihapus karena sudah digunakan pada transaksi/data lain.');
+        }
+
         $nama_obat->delete();
 
         return redirect()

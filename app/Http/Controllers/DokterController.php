@@ -17,7 +17,7 @@ class DokterController extends Controller
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['nama', 'alamat', 'no_telepon', 'status', 'no_bpjs', 'created_at'];
+        $allowed = ['nama', 'alamat', 'jenis_kelamin', 'no_telepon', 'email', 'status', 'no_bpjs', 'created_at'];
         if (! in_array($sort, $allowed)) {
             $sort = 'created_at';
         }
@@ -26,7 +26,8 @@ class DokterController extends Controller
         $dokters = Dokter::withCount('pengeluaranObat')
         ->when($search, function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', "%$search%");
+                $q->where('nama', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%");
             });
         })
         ->when($status !== 'semua', function ($query) use ($status) {
@@ -53,16 +54,20 @@ class DokterController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama'        => 'required|string|max:255',
+            'nama'         => 'required|string|max:255',
             'alamat'       => 'required|string|max:255',
-            'no_telepon'       => 'required|string|max:255',
-            'status'      => 'required|in:aktif,nonaktif',
+            'jenis_kelamin'=> 'required|in:L,P',
+            'no_telepon'   => 'required|string|max:255',
+            'email'        => 'required|email|unique:users,email',
+            'status'       => 'required|in:aktif,nonaktif',
         ]);
 
         Dokter::create([
             'nama'         => $request->nama,
             'alamat'       => $request->alamat,
+            'jenis_kelamin'=> $request->jenis_kelamin,
             'no_telepon'   => $request->no_telepon,
+            'email'        => $request->email,
             'status'       => $request->status,
         ]);
 
@@ -79,10 +84,12 @@ class DokterController extends Controller
     public function update(Request $request, Dokter $dokter)
     {
         $validator = Validator::make($request->all(), [
-            'nama'        => 'required|string|max:255',
-            'alamat'      => 'required|string|max:255',
-            'no_telepon'  => 'required|string|max:255',
-            'status'      => 'required|in:aktif,nonaktif',
+            'nama'         => 'required|string|max:255',
+            'alamat'       => 'required|string|max:255',
+            'jenis_kelamin'=> 'required|in:L,P',
+            'no_telepon'   => 'required|string|max:255',
+            'email'        => 'required|email|unique:users,email,',
+            'status'       => 'required|in:aktif,nonaktif',
         ]);
 
         if ($validator->fails()) {
@@ -95,7 +102,9 @@ class DokterController extends Controller
         $dokter->update($request->only([
             'nama',
             'alamat',
+            'jenis_kelamin',
             'no_telepon',
+            'email',
             'status',
         ]));
 

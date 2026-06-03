@@ -12,8 +12,11 @@ class Pasien extends Model
         'nama',
         'nik',
         'alamat',
+        'jenis_kelamin',
+        'golongan_darah',
         'no_telepon',
-        'no_bpjs'
+        'no_bpjs',
+        'status'
     ];
 
 

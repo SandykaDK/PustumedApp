@@ -15,6 +15,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Daftar User - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -72,12 +73,12 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn-filter">
+                        <a href="{{ route('users.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                             </svg>
-                            Cari
-                        </button>
+                            <span>Reset</span>
+                        </a>
                     </div>
                 </form>
 
@@ -113,13 +114,13 @@
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->no_telepon }}</td>
-                            <td>{{ ucfirst($user->role) }}</td>
+                            <td>{{ ucwords(str_replace('_', ' ', $user->role)) }}</td>
                             <td>
                                 <span class="status-badge {{ $user->status == 'aktif' ? 'status-aktif' : 'status-nonaktif' }}">
                                     {{ ucfirst($user->status) }}
                                 </span>
                             </td>
-                            <td>{{ $user->created_at->format('d M Y') }}</td>
+                            <td>{{ $user->created_at->locale('id')->translatedFormat('d F Y') }}</td>
                             <td>
                                 <div class="action-buttons">
 
@@ -255,6 +256,7 @@
                                     <option value="petugas_administrasi" {{ old('role') == 'petugas_administrasi' ? 'selected' : '' }}>Petugas Administrasi</option>
                                     <option value="petugas_obat" {{ old('role') == 'petugas_obat' ? 'selected' : '' }}>Petugas Obat</option>
                                     <option value="kepala_pustu" {{ old('role') == 'kepala_pustu' ? 'selected' : '' }}>Kepala Pustu</option>
+                                    <option value="super_admin" {{ old('role') == 'super_admin' ? 'selected' : '' }}>Super Admin</option>
                                 </select>
                             </div>
                         </div>
@@ -339,6 +341,7 @@
                                     <option value="petugas_administrasi">Petugas Administrasi</option>
                                     <option value="petugas_obat">Petugas Obat</option>
                                     <option value="kepala_pustu">Kepala Pustu</option>
+                                    <option value="super_admin">Super Admin</option>
                                 </select>
                             </div>
                         </div>
@@ -547,6 +550,39 @@
             initToggleSwitches();
             setupCreateModal();
             setupEditModal();
+
+            // Auto submit filter form with debounce.
+            const filterForm = document.querySelector('.table-actions .filter-form');
+            if (!filterForm) return;
+
+            const searchField = filterForm.querySelector('input[name="search"]');
+            const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+            let filterDebounceTimer = null;
+
+            const submitFilter = () => filterForm.submit();
+            const submitFilterDebounced = (delay = 450) => {
+                if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+                filterDebounceTimer = setTimeout(submitFilter, delay);
+            };
+
+            if (searchField) {
+                searchField.addEventListener('input', function() {
+                    submitFilterDebounced(500);
+                });
+
+                searchField.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitFilterDebounced(0);
+                    }
+                });
+            }
+
+            filterFields.forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterDebounced(250);
+                });
+            });
         });
     })();
 </script>

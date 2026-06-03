@@ -13,8 +13,11 @@ return new class extends Migration
             $table->string('nama')->unique();
             $table->string('nik')->unique();
             $table->string('alamat');
+            $table->enum('jenis_kelamin', ['L', 'P']);
+            $table->enum('golongan_darah', ['A', 'B', 'AB', 'O']);
             $table->string('no_telepon')->unique();
             $table->string('no_bpjs')->unique()->nullable();
+            $table->enum('status', ['aktif', 'non-aktif'])->default('aktif');
             $table->timestamps();
         });
     }

@@ -25,13 +25,45 @@ class PengeluaranObatController extends Controller
             'Pasien',
             'Dokter',
             'detailPengeluaranObat.namaObat',
-            'detailPengeluaranObat.satuan'
+            'detailPengeluaranObat.satuan',
+            'detailPengeluaranObat.stokObat'
         ]);
 
-        // Search by keterangan
+        // Search by pasien name, pasien no_bpjs, dokter name, or nama obat in details
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where('keterangan', 'like', "%{$search}%");
+            $search = trim($request->search);
+
+            // If the search matches any pasien by name or no_bpjs, prefer filtering by pasien/dokter only.
+            // This avoids returning records where the search matches inside medicine names (e.g. "Citra" inside "Bacitrasin").
+            $patientMatch = Pasien::where('nama', 'like', "%{$search}%")
+                ->orWhere('no_bpjs', 'like', "%{$search}%")
+                ->exists();
+
+            if ($patientMatch) {
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('Pasien', function($subquery) use ($search) {
+                        $subquery->where('nama', 'like', "%{$search}%")
+                                 ->orWhere('no_bpjs', 'like', "%{$search}%");
+                    })->orWhereHas('Dokter', function($subquery) use ($search) {
+                        $subquery->where('nama', 'like', "%{$search}%");
+                    });
+                });
+            } else {
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('Pasien', function($subquery) use ($search) {
+                        $subquery->where('nama', 'like', "%{$search}%")
+                                 ->orWhere('no_bpjs', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('Dokter', function($subquery) use ($search) {
+                        $subquery->where('nama', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('detailPengeluaranObat.namaObat', function($subquery) use ($search) {
+                        $escaped = preg_quote(strtolower($search), '/');
+                        $pattern = '(^|[^a-z0-9])' . $escaped . '([^a-z0-9]|$)';
+                        $subquery->whereRaw("LOWER(nama_obat) REGEXP ?", [$pattern]);
+                    });
+                });
+            }
         }
 
         // Filter by date range
@@ -47,17 +79,36 @@ class PengeluaranObatController extends Controller
         $sortColumn = $request->get('sort', 'tanggal_pengeluaran');
         $direction = $request->get('direction', 'desc');
 
-        if (in_array($sortColumn, ['tanggal_pengeluaran'])) {
-            $query->orderBy($sortColumn, $direction);
+        if ($sortColumn === 'tanggal_pengeluaran') {
+            $query->orderBy('pengeluaran_obat.tanggal_pengeluaran', $direction);
+        } elseif ($sortColumn === 'pasien_id') {
+            $query->join('pasien', 'pengeluaran_obat.pasien_id', '=', 'pasien.id')
+                  ->select('pengeluaran_obat.*')
+                  ->orderBy('pasien.nama', $direction);
+        } elseif ($sortColumn === 'dokter_id') {
+            $query->join('dokter', 'pengeluaran_obat.dokter_id', '=', 'dokter.id')
+                  ->select('pengeluaran_obat.*')
+                  ->orderBy('dokter.nama', $direction);
+        } elseif ($sortColumn === 'jumlah_item') {
+            $query->withCount('detailPengeluaranObat')
+                  ->orderBy('detail_pengeluaran_obat_count', $direction);
         }
 
-        $pengeluaranObats = $query->paginate(10);
+        $perPage = (int) $request->get('per_page', 10);
+        if (!in_array($perPage, [10, 25, 50], true)) {
+            $perPage = 10;
+        }
+
+        $pengeluaranObats = $query->paginate($perPage);
 
         // Get data for dropdowns
         $namaObats = NamaObat::all();
         $jenisobats = JenisObat::all();
         $satuanobats = SatuanObat::all();
-        $pasienList = Pasien::all();
+        // For create modal: only active patients
+        $pasienList = Pasien::where('status', 'aktif')->orderBy('nama')->get();
+        // For edit modal: include all patients so non-active ones can be shown (but edit field will be disabled)
+        $pasienListAll = Pasien::orderBy('nama')->get();
         $dokterList = Dokter::where('status', 'aktif')->orderBy('nama')->get();
 
         return view('pengeluaran_obat.pengeluaran_obat', compact(
@@ -66,7 +117,9 @@ class PengeluaranObatController extends Controller
             'jenisobats',
             'satuanobats',
             'pasienList',
+            'pasienListAll',
             'dokterList',
+            'perPage',
             'request'
         ));
     }
@@ -137,7 +190,7 @@ class PengeluaranObatController extends Controller
                 $stokObat->decrement('stok', $detail['jumlah_keluar']);
 
                 // Hitung dan simpan Min-Max
-                (new MinMaxService())->calculateAndUpdate($detail['nama_obat_id']);
+                (new MinMaxService())->calculateAndUpdate($detail['nama_obat_id'], $validated['tanggal_pengeluaran']);
             }
 
             DB::commit();
@@ -222,7 +275,7 @@ class PengeluaranObatController extends Controller
                 $stokObat->decrement('stok', $detail['jumlah_keluar']);
 
                 // Hitung dan simpan Min-Max
-                (new MinMaxService())->calculateAndUpdate($detail['nama_obat_id']);
+                (new MinMaxService())->calculateAndUpdate($detail['nama_obat_id'], $validated['tanggal_pengeluaran']);
             }
 
             DB::commit();
@@ -244,7 +297,7 @@ class PengeluaranObatController extends Controller
                 }
 
                 // Hitung dan simpan Min-Max
-                (new MinMaxService())->calculateAndUpdate($detail->nama_obat_id);
+                (new MinMaxService())->calculateAndUpdate($detail->nama_obat_id, $pengeluaranObat->tanggal_pengeluaran);
             }
 
             $pengeluaranObat->detailPengeluaranObat()->delete();

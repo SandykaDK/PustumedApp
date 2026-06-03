@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Laporan Obat Kadaluwarsa - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -58,16 +59,16 @@
                             <input type="hidden" name="sort_by" value="{{ request('sort_by', 'nama_obat') }}">
                             <input type="hidden" name="direction" value="{{ request('direction', 'asc') }}">
 
-                            <button type="submit" class="btn-filter">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            <a href="{{ route('laporan-obat-kadaluwarsa.index') }}" class="btn-reset" style="display:flex;align-items:center;gap:6px;background:#6b7280;color:white;padding:8px 14px;border-radius:6px;text-decoration:none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                                 </svg>
-                                <span>Cari</span>
-                            </button>
+                                <span>Reset</span>
+                            </a>
 
                             <button type="submit" name="print" value="1" class="btn-filter btn-print">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2.25A2.25 2.25 0 0 1 8.25 0h7.5A2.25 2.25 0 0 1 18 2.25V9M6 9h12M6 9L4.5 11.25M18 9l1.5 2.25M9 14.25h6M9 18h6" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                 </svg>
                                 <span>Cetak</span>
                             </button>
@@ -163,5 +164,40 @@
             </div>
         </div>
     </div>
+<script>
+    (function() {
+        const filterForm = document.querySelector('.table-actions form[method="GET"]');
+        if (!filterForm) return;
+
+        const searchField = filterForm.querySelector('input[name="search"]');
+        const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
+        let filterDebounceTimer = null;
+
+        const submitFilter = () => filterForm.submit();
+        const submitFilterDebounced = (delay = 450) => {
+            if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+            filterDebounceTimer = setTimeout(submitFilter, delay);
+        };
+
+        if (searchField) {
+            searchField.addEventListener('input', function() {
+                submitFilterDebounced(500);
+            });
+
+            searchField.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitFilterDebounced(0);
+                }
+            });
+        }
+
+        filterFields.forEach(function(field) {
+            field.addEventListener('change', function() {
+                submitFilterDebounced(250);
+            });
+        });
+    })();
+</script>
 </body>
 </html>

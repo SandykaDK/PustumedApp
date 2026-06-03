@@ -99,14 +99,62 @@ body.sidebar-collapsed .container {
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stats-grid-kepala {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stats-grid-kepala .stat-card {
+    min-height: 154px;
+}
+
+.top-summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 14px;
+    align-items: stretch; /* stretch children so notifications can fill height */
+    margin-bottom: 16px;
+}
+
+.top-summary-row .stats-grid {
+    margin-bottom: 0;
+}
+
+.top-summary-row .notifications {
+    display: flex;
+    flex-direction: column;
+    max-height: 320px;
+    overflow: hidden;
+}
+
+.top-summary-row .notifications h2 {
+    margin: 0 0 12px;
+    padding: 4px 0 0;
+    flex-shrink: 0;
+}
+
+.top-summary-row .notifications .notification-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.top-summary-row .notifications .notification-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.top-summary-row .notifications .notification-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
 }
 
 .stat-card {
     background: white;
     border-radius: 15px;
-    padding: 25px;
+    padding: 14px 16px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     animation: slideUp 0.5s ease-out;
@@ -118,14 +166,14 @@ body.sidebar-collapsed .container {
 }
 
 .stat-icon {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    margin-bottom: 15px;
+    font-size: 20px;
+    margin-bottom: 9px;
 }
 
 .stat-icon.blue {
@@ -148,25 +196,283 @@ body.sidebar-collapsed .container {
     color: #f97316;
 }
 
+.stat-icon.red {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+.stat-icon.gray {
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+}
+
 .stat-card h3 {
-    font-size: 14px;
+    font-size: 13px;
     color: #999;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     font-weight: 500;
+    line-height: 1.35;
 }
 
 .stat-card .value {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 700;
     color: #333;
+    line-height: 1.1;
 }
 
 .info-section {
     background: white;
     border-radius: 15px;
-    padding: 30px;
+    padding: 22px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     animation: slideUp 0.5s ease-out;
+}
+
+.dashboard-charts {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.charts-row.two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.chart-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.chart-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #0f172a;
+}
+
+.chart-card.compact canvas {
+    max-height: 180px;
+}
+
+.top-used-card canvas {
+    max-height: 300px;
+}
+
+.dashboard-layout .top-used-card {
+    height: 100%;
+}
+
+.petugas-obat-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.petugas-stats-grid {
+    margin-bottom: 0;
+}
+
+.petugas-top-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    gap: 16px;
+    align-items: stretch; /* make both columns equal height */
+}
+
+/* Height for the top grid cards (priority + notifications). Adjust as needed. */
+.petugas-top-grid {
+    --petugas-top-card-height: 520px;
+}
+
+.priority-table-card {
+    /* make the priority card a column flex container so we can let the table area scroll */
+    display: flex;
+    flex-direction: column;
+    height: var(--petugas-top-card-height);
+}
+
+.priority-table-card h4 {
+    margin-bottom: 12px;
+}
+
+.priority-table-toolbar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.priority-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.priority-filter-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.priority-status-filter {
+    min-width: 220px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    color: #0f172a;
+    font-size: 13px;
+}
+
+.priority-table-meta {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.priority-table-wrap {
+    /* take remaining space inside the priority card and allow scrolling */
+    flex: 1;
+    overflow: auto;
+    padding-right: 2px;
+}
+
+.priority-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.priority-table th,
+.priority-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+}
+
+.priority-table th {
+    color: #475569;
+    font-weight: 700;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
+}
+
+.priority-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.priority-empty-row td,
+.priority-no-results td {
+    padding: 18px 10px;
+}
+
+.priority-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.priority-status.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.priority-status.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.priority-status.danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.priority-status.info {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.petugas-notifications {
+    /* make notifications card fill the full column height and layout its content */
+    display: flex;
+    flex-direction: column;
+    height: var(--petugas-top-card-height);
+}
+
+.petugas-notifications h2 {
+    margin-bottom: 12px;
+}
+
+.petugas-notifications .notification-scroll {
+    flex: 1; /* take remaining space inside the card */
+    overflow-y: auto;
+}
+
+.petugas-activity-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.activity-card {
+    min-height: 100%;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.activity-item {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.activity-item-header,
+.activity-item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.activity-item-header strong {
+    font-size: 13px;
+    color: #0f172a;
+}
+
+.activity-item-header span,
+.activity-item-meta {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.activity-item p {
+    margin: 8px 0 0;
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.45;
 }
 
 .dashboard-hero {
@@ -215,9 +521,10 @@ body.sidebar-collapsed .container {
 
 .dashboard-layout {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: stretch;
 }
 
 .alert-list {
@@ -267,6 +574,106 @@ body.sidebar-collapsed .container {
     line-height: 1.5;
 }
 
+.notification-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+/* Ensure notification lists are constrained and scrollable across layouts */
+.notification-scroll {
+    /* allow container to grow to fill parent; specific layouts may constrain height */
+    max-height: none;
+    overflow-y: auto;
+}
+
+.notification-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+
+.notification-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: #fff;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.notification-card.warning {
+    background: linear-gradient(135deg, #fff7ed 0%, #fffbeb 100%);
+    border-color: #fdba74;
+}
+
+.notification-card.danger {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+    border-color: #fca5a5;
+}
+
+.notification-card.info {
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+    border-color: #93c5fd;
+}
+
+.notification-chip {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.notification-card.warning .notification-chip {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.notification-card.danger .notification-chip {
+    background: #fecaca;
+    color: #991b1b;
+}
+
+.notification-card.info .notification-chip {
+    background: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.notification-card strong {
+    font-size: 12px;
+    color: #0f172a;
+}
+
+.notification-card small {
+    font-size: 11px;
+    line-height: 1.35;
+    color: #475569;
+}
+
+.notification-empty {
+    padding: 16px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    color: #64748b;
+    font-size: 13px;
+}
+
 .quick-action-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -310,9 +717,34 @@ body.sidebar-collapsed .container {
 }
 
 .info-section h2 {
-    font-size: 20px;
-    margin-bottom: 20px;
+    font-size: 18px;
+    margin-bottom: 14px;
     color: #333;
+}
+
+.notifications ul,
+.recent-activity ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.notifications li,
+.recent-activity li {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 6px;
+}
+
+.recent-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.recent-columns h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #334155;
 }
 
 .info-item {
@@ -350,12 +782,57 @@ body.sidebar-collapsed .container {
         grid-template-columns: 1fr;
     }
 
+    .stats-grid-kepala {
+        grid-template-columns: 1fr;
+    }
+
+    .top-summary-row {
+        grid-template-columns: 1fr;
+    }
+
+    .top-summary-row .notifications {
+        max-height: none;
+        overflow: visible;
+    }
+
     .dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .petugas-top-grid,
+    .petugas-activity-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .priority-table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .priority-status-filter {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .charts-row.two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .recent-columns {
         grid-template-columns: 1fr;
     }
 
     .quick-action-grid {
         grid-template-columns: 1fr;
+    }
+
+    .notification-stack {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-layout .notifications {
+        max-height: none;
+        overflow: visible;
     }
 
     .petugas-obat-hero {
@@ -366,5 +843,11 @@ body.sidebar-collapsed .container {
     .container {
         padding: 20px 15px;
         padding-bottom: 100px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .stats-grid-kepala {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

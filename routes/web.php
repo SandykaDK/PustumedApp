@@ -6,6 +6,7 @@ use App\Http\Controllers\DokterController;
 use App\Http\Controllers\JenisObatController;
 use App\Http\Controllers\LaporanObatKadaluwarsaController;
 use App\Http\Controllers\LaporanPemusnahanObatController;
+use App\Http\Controllers\MinMaxController;
 use App\Http\Controllers\NamaObatController;
 use App\Http\Controllers\PasienController;
 use App\Http\Controllers\PemusnahanObatController;
@@ -27,11 +28,16 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])
 
 Route::post('/login', [AuthController::class, 'login'])
     ->name('login.post');
+// Per-tab token login (used by JS to create a tab-scoped token)
+// Disabled: application uses session-based login now.
+// Route::post('/tab-login', [\App\Http\Controllers\ApiAuthController::class, 'login'])
+//     ->name('tab.login');
+
+// Route::post('/tab-logout', [\App\Http\Controllers\ApiAuthController::class, 'logout'])
+//     ->name('tab.logout');
 
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout');
-// Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-// Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 
 // Dashboard Route (Protected)
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -268,13 +274,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/permintaan-obat', [PermintaanObatController::class, 'store'])
         ->name('permintaan-obat.store');
+});
 
-    // Route::post('/permintaan-obat/{id}/approve', [PermintaanObatController::class, 'approve'])
-    //     ->name('permintaan-obat.approve');
-
-    // // Cancel a pending permintaan request (only request owner)
-    // Route::post('/permintaan-obat/{id}/cancel', [PermintaanObatController::class, 'cancel'])
-    //     ->name('permintaan-obat.cancel');
+// Min Max
+Route::middleware(['auth'])->group(function () {
+    Route::get('/min-max', [MinMaxController::class, 'index'])
+        ->name('min-max.index');
 });
 
 // Laporan Obat Kadaluwarsa

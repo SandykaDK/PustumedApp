@@ -409,6 +409,34 @@ body.sidebar-collapsed .main-content {
     text-decoration: none;
 }
 
+.sidebar-submenu a.sidebar-link-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-submenu a.sidebar-link-with-badge .heroicon-sidebar {
+    flex-shrink: 0;
+}
+
+.sidebar-submenu a.sidebar-link-with-badge .sidebar-badge {
+    margin-left: 6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .sidebar-submenu a:hover {
     color: #667eea;
 }
@@ -448,6 +476,10 @@ body.sidebar-collapsed .main-content {
 }
 
 .sidebar.collapsed .sidebar-submenu a span {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-submenu a .sidebar-badge {
     display: none;
 }
 

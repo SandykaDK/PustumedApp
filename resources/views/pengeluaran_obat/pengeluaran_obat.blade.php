@@ -14,6 +14,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <title>Pengeluaran Obat - PustumedApp</title>
 
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -51,7 +52,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                                     </svg>
                                 </span>
-                                <input type="text" name="search" class="search-input" placeholder="Cari keterangan..." value="{{ request('search') }}">
+                                <input type="text" name="search" id="searchInput" class="search-input" placeholder="Cari No. BPJS, nama pasien, nama obat, atau dokter..." value="{{ request('search') }}">
                             </div>
 
                             <div class="date-filter-wrapper">
@@ -65,12 +66,11 @@
                                     <input type="date" name="tanggal_akhir" id="tanggal_akhir" value="{{ request('tanggal_akhir') }}" class="date-input">
                                 </div>
 
-                                <button type="submit" class="btn-filter">
+                                <button type="button" id="resetFilterBtn" class="btn-reset">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                                     </svg>
-                                    <span>Cari</span>
+                                    <span>Reset</span>
                                 </button>
                             </div>
                         </div>
@@ -88,9 +88,10 @@
                     <thead>
                         <tr>
                             <th>{!! sortLink('tanggal_pengeluaran', 'Tanggal') !!}</th>
-                            <th>Pasien</th>
-                            <th>Dokter</th>
-                            <th>Jumlah Item</th>
+                            <th>No. BPJS</th>
+                            <th>{!! sortLink('pasien_id', 'Pasien') !!}</th>
+                            <th>{!! sortLink('dokter_id', 'Dokter') !!}</th>
+                            <th>{!! sortLink('jumlah_item', 'Jumlah Item') !!}</th>
                             <th>Keterangan</th>
                             <th>Aksi</th>
                         </tr>
@@ -98,8 +99,13 @@
 
                     <tbody>
                         @forelse($pengeluaranObats as $record)
-                            <tr>
-                                <td>{{ \Carbon\Carbon::parse($record->tanggal_pengeluaran)->format('d/m/Y') }}</td>
+                            <tr class="pengeluaran-main-row" data-pengeluaran-id="{{ $record->id }}" role="button" tabindex="0" aria-expanded="false" aria-controls="detail-row-{{ $record->id }}">
+                                <td style="color: blue;">
+                                    <div class="row-title-cell">
+                                        <span>{{ \Carbon\Carbon::parse($record->tanggal_pengeluaran)->format('d/m/Y') }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ $record->Pasien->no_bpjs ?? '-' }}</td>
                                 <td>{{ $record->Pasien->nama ?? '-' }}</td>
                                 <td>{{ $record->Dokter->nama ?? '-' }}</td>
                                 <td>{{ count($record->detailPengeluaranObat) }}</td>
@@ -154,17 +160,69 @@
                                     </div>
                                 </td>
                             </tr>
+                            <tr class="pengeluaran-detail-row hidden" id="detail-row-{{ $record->id }}">
+                                <td colspan="7">
+                                    <div class="detail-panel">
+                                        <div class="detail-table-wrapper">
+                                            @if ($record->detailPengeluaranObat->isNotEmpty())
+                                                <table class="expanded-detail-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Nama Obat</th>
+                                                            <th>Tanggal Kadaluwarsa</th>
+                                                            <th>Jumlah Keluar</th>
+                                                            <th>Satuan</th>
+                                                            <th>Lokasi Penyimpanan</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($record->detailPengeluaranObat as $detail)
+                                                            <tr>
+                                                                <td>{{ $detail->namaObat->nama_obat ?? '-' }}</td>
+                                                                <td>{{ $detail->stokObat?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stokObat->tanggal_kadaluwarsa)->format('d M Y') : '-' }}</td>
+                                                                <td>{{ $detail->jumlah_keluar }}</td>
+                                                                <td>{{ $detail->satuan->satuan_obat ?? '-' }}</td>
+                                                                <td>{{ $detail->lokasi_penyimpanan ?? '-' }}</td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            @else
+                                                <div class="detail-empty-state">Tidak ada detail obat pada pengeluaran ini.</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="empty">Tidak ada data pengeluaran obat</td>
+                                <td colspan="7" class="empty">Tidak ada data pengeluaran obat</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
 
-                <!-- Pagination -->
-                <div class="pagination-wrapper">
-                    {{ $pengeluaranObats->render('pagination.custom') }}
+                <div class="pagination-section">
+                    <div class="pagination-controls">
+                        <div class="per-page-selector">
+                            <form method="GET" action="{{ route('pengeluaran-obat.index') }}" class="per-page-form">
+                                <input type="hidden" name="search" value="{{ request('search') }}">
+                                <input type="hidden" name="tanggal_awal" value="{{ request('tanggal_awal') }}">
+                                <input type="hidden" name="tanggal_akhir" value="{{ request('tanggal_akhir') }}">
+                                <input type="hidden" name="sort" value="{{ request('sort') }}">
+                                <input type="hidden" name="direction" value="{{ request('direction') }}">
+                                <label for="per_page_footer" class="per-page-label">Tampilkan:</label>
+                                <select name="per_page" id="per_page_footer" class="per-page-input" onchange="this.form.submit()">
+                                    <option value="10" {{ $perPage == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ $perPage == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="pagination-wrapper">
+                        {{ $pengeluaranObats->appends(request()->query())->links() }}
+                    </div>
                 </div>
             </div>
 
@@ -243,12 +301,12 @@
                                 </div>
                                 <button type="button" class="btn-add-detail" id="addDetailCreate">+ Tambah Item</button>
                             </div>
-
-                            <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
-                                <button type="button" id="cancelCreatePengeluaranModal" class="btn-secondary">Batal</button>
-                                <button type="submit" class="btn-primary">Simpan</button>
-                            </div>
                         </form>
+                    </div>
+
+                    <div class="modal-footer modal-footer-persistent">
+                        <button type="button" id="cancelCreatePengeluaranModal" class="btn-secondary">Batal</button>
+                        <button type="submit" form="createPengeluaranForm" class="btn-primary">Simpan</button>
                     </div>
                 </div>
             </div>
@@ -273,29 +331,30 @@
                                 <div>
                                     <div class="form-group">
                                         <label for="edit_tanggal_pengeluaran">Tanggal Pengeluaran</label>
-                                        <input type="date" id="edit_tanggal_pengeluaran" name="tanggal_pengeluaran" value="{{ old('tanggal_pengeluaran') }}" required>
+                                        <input type="date" id="edit_tanggal_pengeluaran" name="tanggal_pengeluaran" value="{{ old('tanggal_pengeluaran') }}" required disabled>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="edit_pasien_id">Pasien</label>
-                                        <select id="edit_pasien_id" name="pasien_id" class="pasien-select" required>
+                                        <select id="edit_pasien_id" name="pasien_id_disabled" class="pasien-select" disabled>
                                             <option value="">Pilih Pasien</option>
-                                            @foreach($pasienList as $pasien)
+                                            @foreach($pasienListAll as $pasien)
                                                 <option value="{{ $pasien->id }}" data-no_bpjs="{{ $pasien->no_bpjs }}">{{ $pasien->no_bpjs }} - {{ $pasien->nama }}</option>
                                             @endforeach
                                         </select>
+                                        <input type="hidden" id="edit_pasien_hidden" name="pasien_id" value="">
                                     </div>
                                 </div>
 
                                 <div>
                                     <div class="form-group">
                                         <label for="edit_user_name">Nama Petugas</label>
-                                        <input type="text" id="edit_user_name" name="user_name" readonly>
+                                        <input type="text" id="edit_user_name" name="user_name" readonly disabled>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="edit_dokter_id">Dokter</label>
-                                        <select id="edit_dokter_id" name="dokter_id" required>
+                                        <select id="edit_dokter_id" name="dokter_id" required disabled>
                                             <option value="">Pilih Dokter</option>
                                             @foreach($dokterList as $dokter)
                                                 <option value="{{ $dokter->id }}">{{ $dokter->nama }}</option>
@@ -306,8 +365,8 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_keterangan">Keterangan</label>
-                                <textarea id="edit_keterangan" name="keterangan" rows="2"></textarea>
+                                        <label for="edit_keterangan">Keterangan</label>
+                                        <textarea id="edit_keterangan" name="keterangan" rows="2" disabled></textarea>
                             </div>
 
                             <div style="margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
@@ -352,6 +411,23 @@
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    function togglePengeluaranDetail(row) {
+        if (!row) return;
+
+        const pengeluaranId = row.dataset.pengeluaranId;
+        const detailRow = document.getElementById(`detail-row-${pengeluaranId}`);
+        const icon = document.getElementById(`toggle-icon-${pengeluaranId}`);
+        const expanded = row.getAttribute('aria-expanded') === 'true';
+
+        row.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        if (detailRow) {
+            detailRow.classList.toggle('hidden', expanded);
+        }
+        if (icon) {
+            icon.textContent = expanded ? '▸' : '▾';
+        }
     }
 
     // Helper function to show styled alert in modal
@@ -456,6 +532,35 @@
 
     // Wait for DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
+        const pengeluaranTable = document.querySelector('.pengeluaran-obat-table tbody');
+
+        if (pengeluaranTable) {
+            pengeluaranTable.addEventListener('click', function(e) {
+                const row = e.target.closest('.pengeluaran-main-row');
+                if (!row) return;
+
+                if (e.target.closest('button, a, input, select, textarea, .select2-container, .action-buttons')) {
+                    return;
+                }
+
+                togglePengeluaranDetail(row);
+            });
+
+            pengeluaranTable.addEventListener('keydown', function(e) {
+                const row = e.target.closest('.pengeluaran-main-row');
+                if (!row) return;
+
+                if (e.target.closest('button, a, input, select, textarea, .select2-container, .action-buttons')) {
+                    return;
+                }
+
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    togglePengeluaranDetail(row);
+                }
+            });
+        }
+
         // Deklarasi semua modal elements di awal
         const currentUserName = "{{ addslashes(Auth::user()->name) }}";
         const openCreateBtn = document.getElementById('openCreateModal');
@@ -539,7 +644,7 @@
                         const $s = jQuery(select);
                         let parent = $s.closest('.modal');
                         if (!parent || parent.length === 0) parent = jQuery(document.body);
-                        $s.select2({ width: '100%', dropdownParent: parent, placeholder: 'Pilih Pasien', allowClear: true });
+                        $s.select2({ width: '100%', dropdownParent: parent, placeholder: 'Pilih Pasien', allowClear: false });
                     }
                 } catch (err) {}
             });
@@ -1075,7 +1180,7 @@
             }
         }
 
-        document.querySelectorAll('.openEditModal').forEach(btn => {
+                document.querySelectorAll('.openEditModal').forEach(btn => {
             btn.addEventListener('click', function() {
                 const record = JSON.parse(this.getAttribute('data-record'));
 
@@ -1083,7 +1188,21 @@
                 if (editTanggalInput) editTanggalInput.value = record.tanggal_pengeluaran;
 
                 const editPasienSelect = document.getElementById('edit_pasien_id');
-                if (editPasienSelect) editPasienSelect.value = record.pasien_id;
+                const editPasienHidden = document.getElementById('edit_pasien_hidden');
+                if (editPasienSelect) {
+                    const pasienIdStr = String(record.pasien_id || '');
+                    const currentOption = Array.from(editPasienSelect.options).find(option => option.value === pasienIdStr);
+                    if (!currentOption && record.pasien) {
+                        const preservedOption = document.createElement('option');
+                        preservedOption.value = pasienIdStr;
+                        preservedOption.textContent = `${record.pasien.nama || 'Pasien'} (Nonaktif)`;
+                        preservedOption.selected = true;
+                        editPasienSelect.appendChild(preservedOption);
+                    } else if (currentOption) {
+                        editPasienSelect.value = pasienIdStr;
+                    }
+                    if (editPasienHidden) editPasienHidden.value = record.pasien_id || '';
+                }
 
                 const editDokterSelect = document.getElementById('edit_dokter_id');
                 if (editDokterSelect) {
@@ -1273,6 +1392,60 @@
                 enableDisabledFields(editPengeluaranForm);
                 isEditSubmitting = true;
                 editPengeluaranForm.submit();
+            });
+        }
+
+        // Auto submit filter form with debounce on typing/changing filters.
+        const searchInput = document.getElementById('searchInput');
+        const filterForm = searchInput ? searchInput.closest('form') : null;
+        let filterDebounceTimer = null;
+        const submitFilterForm = () => {
+            if (!filterForm) return;
+            filterForm.submit();
+        };
+        const submitFilterFormDebounced = (delay = 450) => {
+            if (!filterForm) return;
+            if (filterDebounceTimer) {
+                clearTimeout(filterDebounceTimer);
+            }
+            filterDebounceTimer = setTimeout(submitFilterForm, delay);
+        };
+
+        if (searchInput && filterForm) {
+            searchInput.addEventListener('input', function() {
+                submitFilterFormDebounced(500);
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitFilterFormDebounced(0);
+                }
+            });
+
+            filterForm.querySelectorAll('input[type="date"], select').forEach(function(field) {
+                field.addEventListener('change', function() {
+                    submitFilterFormDebounced(250);
+                });
+            });
+        }
+
+        // Reset filter button handler
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+        if (resetFilterBtn && filterForm) {
+            resetFilterBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Clear all filter inputs
+                const searchInputField = filterForm.querySelector('input[name="search"]');
+                const tanggalAwalField = filterForm.querySelector('input[name="tanggal_awal"]');
+                const tanggalAkhirField = filterForm.querySelector('input[name="tanggal_akhir"]');
+
+                if (searchInputField) searchInputField.value = '';
+                if (tanggalAwalField) tanggalAwalField.value = '';
+                if (tanggalAkhirField) tanggalAkhirField.value = '';
+
+                // Redirect to index without any filters
+                window.location.href = '{{ route("pengeluaran-obat.index") }}';
             });
         }
     });

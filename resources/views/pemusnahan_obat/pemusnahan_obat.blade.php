@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Pemusnahan Obat - PustumedApp</title>
 
@@ -11,6 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/pemusnahan_obat/pemusnahan_obat.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/modal.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
 </head>
 <body>
 
@@ -22,6 +24,9 @@
             <div class="page-header">
                 <h1>Pemusnahan Obat - Mendekati Kadaluwarsa (&lt; 30 hari)</h1>
             </div>
+
+            <x-alert type="success" />
+            <x-alert type="error" />
 
             <div class="card">
                 <div class="table-actions">
@@ -36,12 +41,12 @@
                                 </span>
                                 <input type="text" name="search" class="search-input" placeholder="Cari nama obat..." value="{{ $search }}">
                             </div>
-                            <button type="submit" class="btn-filter">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            <a href="{{ route('pemusnahan-obat.index') }}" class="btn-filter btn-reset">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
                                 </svg>
-                                <span>Cari</span>
-                            </button>
+                                <span>Reset</span>
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -55,7 +60,14 @@
 
                 <div class="tabs-bar" style="margin-top:12px;">
                     <div class="tabs" role="tablist" aria-label="Pemusnahan tabs">
-                        @if(in_array($role, $petugasRoles))
+                        @if($role === 'super_admin')
+                            <button class="tab-btn" data-tab="belum_diajukan">Belum Diajukan</button>
+                            <button class="tab-btn" data-tab="sudah_diajukan">Sudah Diajukan</button>
+                            <button class="tab-btn" data-tab="sudah_disetujui">Sudah Disetujui</button>
+                            <button class="tab-btn" data-tab="belum_dikonfirmasi">Belum Dikonfirmasi</button>
+                            <button class="tab-btn" data-tab="sudah_dikonfirmasi">Sudah Dikonfirmasi</button>
+                            <button class="tab-btn" data-tab="sudah_dimusnahkan">Sudah Dimusnahkan</button>
+                        @elseif(in_array($role, $petugasRoles))
                             <button class="tab-btn" data-tab="belum_diajukan">Belum Diajukan</button>
                             <button class="tab-btn" data-tab="sudah_diajukan">Sudah Diajukan</button>
                             <button class="tab-btn" data-tab="sudah_disetujui">Sudah Disetujui</button>
@@ -116,22 +128,7 @@
                                         @endif
                                     </a>
                                 </th>
-                                <th>
-                                    <a href="{{ route('pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'sisa_hari', 'direction' => $sort_by === 'sisa_hari' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
-                                        Sisa Hari
-                                        @if($sort_by === 'sisa_hari')
-                                            @if($direction === 'asc')
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sort-icon">
-                                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
-                                                </svg>
-                                            @else
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sort-icon">
-                                                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-                                                </svg>
-                                            @endif
-                                        @endif
-                                    </a>
-                                </th>
+                                <th>Sisa Hari</th>
                                 <th>
                                     <a href="{{ route('pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'jumlah_obat', 'direction' => $sort_by === 'jumlah_obat' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
                                         Jumlah Obat
@@ -156,7 +153,7 @@
                                 <tr>
                                     <td>{{ $stok->namaObat?->nama_obat ?? '-' }}</td>
                                     <td>{{ $stok->no_batch ?? '-' }}</td>
-                                    <td>{{ optional($stok->tanggal_kadaluwarsa)->translatedFormat('d F Y') }}</td>
+                                    <td>{{ $stok->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($stok->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                     @php
                                         $remaining = null;
                                         if ($stok->tanggal_kadaluwarsa) {
@@ -175,7 +172,7 @@
                                                 data-tanggal="{{ optional($stok->tanggal_kadaluwarsa)->toDateString() }}"
                                                 data-stok-qty="{{ $stok->stok }}"
                                                 data-no-batch="{{ $stok->no_batch }}"
-                                                data-lokasi="{{ $stok->keterangan ?? '' }}">Ajukan</button>
+                                                data-lokasi="{{ $stok->namaObat?->lokasi_penyimpanan ?? '' }}">Ajukan</button>
                                         @else
                                             -
                                         @endif
@@ -287,7 +284,7 @@
                                     <tr>
                                         <td>{{ $detail->namaObat?->nama_obat ?? '-' }}</td>
                                         <td>{{ $detail->stok?->no_batch ?? '-' }}</td>
-                                        <td>{{ optional($detail->stok?->tanggal_kadaluwarsa)->translatedFormat('d F Y') }}</td>
+                                        <td>{{ $detail->stok?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stok->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                         @php
                                             $rem = null;
                                             if ($detail->stok?->tanggal_kadaluwarsa) {
@@ -417,24 +414,11 @@
                                     <tr>
                                         <td>{{ $detail->namaObat?->nama_obat ?? '-' }}</td>
                                         <td>{{ $detail->stok?->no_batch ?? '-' }}</td>
-                                        <td>{{ optional($detail->stok?->tanggal_kadaluwarsa)->translatedFormat('d F Y') }}</td>
+                                        <td>{{ $detail->stok?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stok->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                         <td>{{ $detail->jumlah }}</td>
-                                        @php
-                                            $approvalDate = '-';
-                                            if (!empty($req->approved_at)) {
-                                                try {
-                                                    $dt = \Carbon\Carbon::parse($req->approved_at);
-                                                    if ($dt->format('H:i:s') === '00:00:00') {
-                                                        $approvalDate = $dt->translatedFormat('d F Y');
-                                                    } else {
-                                                        $approvalDate = $dt->translatedFormat('d F Y, H:i:s');
-                                                    }
-                                                } catch (\Exception $e) {
-                                                    $approvalDate = (string) $req->approved_at;
-                                                }
-                                            }
-                                        @endphp
-                                        <td>{{ $approvalDate }}</td>
+                                        <td>
+                                            <span class="local-dt" data-format="datetime" data-iso="{{ $req->approved_at ? $req->approved_at->toIso8601String() : '' }}">{{ $req->approved_at ? $req->approved_at->translatedFormat('d F Y, H:i:s') : '-' }}</span>
+                                        </td>
                                         <td>
                                             <button class="action-btn process processPemusnahan" data-id="{{ $req->id }}" data-req='@json($req)' title="Proses">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -506,7 +490,7 @@
                                 </th>
                                 <th>
                                     <a href="{{ route('pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'tanggal_pemusnahan', 'direction' => $sort_by === 'tanggal_pemusnahan' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
-                                        Tanggal Pemusnahan
+                                        Tanggal Pengajuan
                                         @if($sort_by === 'tanggal_pemusnahan')
                                             @if($direction === 'asc')
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sort-icon">
@@ -530,9 +514,11 @@
                                     <tr>
                                         <td>{{ $detail->namaObat?->nama_obat ?? '-' }}</td>
                                         <td>{{ $detail->stok?->no_batch ?? '-' }}</td>
-                                        <td>{{ optional($detail->stok?->tanggal_kadaluwarsa)->translatedFormat('d F Y') }}</td>
+                                        <td>{{ $detail->stok?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stok->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                         <td>{{ $detail->jumlah }}</td>
-                                        <td>{{ optional($req->tanggal_pemusnahan)->translatedFormat('d F Y') }}</td>
+                                        <td>
+                                            <span class="local-dt" data-format="date" data-iso="{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->toIso8601String() : '' }}">{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->translatedFormat('d F Y') : '-' }}</span>
+                                        </td>
                                         <td>
                                             @if($req->bukti_foto)
                                                 <a href="{{ route('pemusnahan-obat.download-foto', $req->id) }}" target="_blank">Lihat</a>
@@ -598,7 +584,9 @@
                         <tbody>
                             @forelse($pending ?? [] as $i => $req)
                                 <tr>
-                                    <td>{{ optional($req->tanggal_pemusnahan)->translatedFormat('d F Y, H:i:s') }}</td>
+                                    <td>
+                                        <span class="local-dt" data-format="datetime" data-iso="{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->toIso8601String() : '' }}">{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->translatedFormat('d F Y, H:i:s') : '-' }}</span>
+                                    </td>
                                     <td>{{ $req->user?->name ?? '-' }}</td>
                                     <td>
                                         @php
@@ -713,26 +701,12 @@
                             @forelse($approved ?? [] as $i => $req)
                                 <tr>
                                     <td>
-                                        @php
-                                            try {
-                                                $displayTanggalPemusnahan = $req->tanggal_pemusnahan ? $req->tanggal_pemusnahan->translatedFormat('d F Y, H:i:s') : '-';
-                                            } catch (\Exception $e) {
-                                                $displayTanggalPemusnahan = $req->tanggal_pemusnahan ? $req->tanggal_pemusnahan->format('Y-m-d H:i:s') : '-';
-                                            }
-                                        @endphp
-                                        {{ $displayTanggalPemusnahan }}
+                                        <span class="local-dt" data-format="datetime" data-iso="{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->toIso8601String() : '' }}">{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->translatedFormat('d F Y, H:i:s') : '-' }}</span>
                                     </td>
                                     <td>{{ $req->user?->name ?? '-' }}</td>
                                     <td>{{ $req->approver?->name ?? '-' }}</td>
                                     <td>
-                                        @php
-                                            try {
-                                                $displayApprovedAt = $req->approved_at ? $req->approved_at->translatedFormat('d F Y, H:i:s') : '-';
-                                            } catch (\Exception $e) {
-                                                $displayApprovedAt = $req->approved_at ? $req->approved_at->format('Y-m-d H:i:s') : '-';
-                                            }
-                                        @endphp
-                                        {{ $displayApprovedAt }}
+                                        <span class="local-dt" data-format="datetime" data-iso="{{ $req->approved_at ? $req->approved_at->toIso8601String() : '' }}">{{ $req->approved_at ? $req->approved_at->translatedFormat('d F Y, H:i:s') : '-' }}</span>
                                     </td>
                                     <td>{{ Str::limit($req->keterangan, 40) }}</td>
                                     <td>
@@ -764,8 +738,8 @@
                 @csrf
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="tanggal_pemusnahan">Tanggal Pemusnahan</label>
-                        <input type="date" id="tanggal_pemusnahan" name="tanggal_pemusnahan" required readonly>
+                        <label for="tanggal_pengajuan">Tanggal Pengajuan</label>
+                        <input type="date" id="tanggal_pengajuan" name="tanggal_pengajuan" required readonly>
                     </div>
                     <div class="form-group">
                         <label for="keterangan_pemusnahan">Keterangan</label>
@@ -917,7 +891,7 @@
         createModal.classList.remove('hidden');
         createModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        document.getElementById('tanggal_pemusnahan').value = new Date().toISOString().slice(0,10);
+        document.getElementById('tanggal_pengajuan').value = new Date().toISOString().slice(0,10);
     }
     function closeCreatePemusnahan() {
         if (!createModal) return;
@@ -1045,6 +1019,18 @@
         if (!tpl || !container) return;
         container.innerHTML = tpl.innerHTML;
         attachTableListeners();
+        // localize any server-rendered ISO timestamps into client-local display
+        (function localizeRenderedDates() {
+            container.querySelectorAll('.local-dt').forEach(el => {
+                const iso = el.dataset.iso;
+                const fmt = el.dataset.format || 'datetime';
+                if (!iso) return;
+                try {
+                    if (fmt === 'date') el.textContent = formatDateISO(iso);
+                    else el.textContent = formatDateTimeISO(iso);
+                } catch (e) { /* ignore */ }
+            });
+        })();
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
     }
 
@@ -1062,23 +1048,39 @@
         return `${day} ${month} ${year}, ${hh}:${mm}:${ss}`;
     }
 
+    function formatDateISO(iso) {
+        if (!iso) return '-';
+        const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        const d = new Date(iso);
+        if (isNaN(d)) return iso;
+        const day = String(d.getDate()).padStart(2,'0');
+        const month = months[d.getMonth()] || '';
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+
     function onViewPemusnahan(e) {
         const btn = e.currentTarget;
         const req = JSON.parse(btn.dataset.req);
         const pengaju = req.user?.name || '-';
-        const tanggal = formatDateTimeISO(req.tanggal_pemusnahan);
+        const tanggalPengajuan = formatDateTimeISO(req.tanggal_pengajuan);
+        const tanggalDisetujui = formatDateTimeISO(req.approved_at);
+        const tanggalPemusnahan = formatDateTimeISO(req.tanggal_pemusnahan);
         const keterangan = req.keterangan || '-';
 
         let html = `<div class="pemusnahan-meta">` +
                     `<div class="meta-item"><label>Pengaju</label><div class="value">${pengaju}</div></div>` +
-                    `<div class="meta-item"><label>Tanggal</label><div class="value">${tanggal}</div></div>` +
-                    `<div class="meta-item" style="flex:1 1 300px;"><label>Keterangan</label><div class="value">${keterangan}</div></div>` +
+                    `<div class="meta-item"><label>Tanggal Pengajuan</label><div class="value">${tanggalPengajuan}</div></div>` +
+                    `<div class="meta-item"><label>Tanggal Disetujui</label><div class="value">${tanggalDisetujui}</div></div>` +
+                    `<div class="meta-item"><label>Tanggal Pemusnahan</label><div class="value">${tanggalPemusnahan}</div></div>` +
+                    `<div class="meta-item meta-item--full"><label>Keterangan</label><div class="value">${keterangan}</div></div>` +
                     `</div>`;
 
         html += `<div class="table-wrapper"><table class="detail-table"><thead><tr><th>Nama Obat</th><th>Jumlah</th><th>Satuan</th><th>Lokasi</th><th>Tanggal Kadaluwarsa</th></tr></thead><tbody>`;
         (req.details || []).forEach(d => {
-            const tgl = d.stok?.tanggal_kadaluwarsa ? formatDateTimeISO(d.stok.tanggal_kadaluwarsa) : (d.stok_obat_id ? 'terpilih' : '');
-            html += `<tr><td>${d.nama_obat?.nama_obat || d.nama_obat_id}</td><td>${d.jumlah}</td><td>${d.satuan?.satuan_obat || d.satuan_id || ''}</td><td>${d.lokasi_penyimpanan || ''}</td><td>${tgl}</td></tr>`;
+            const tgl = d.stok?.tanggal_kadaluwarsa ? formatDateISO(d.stok.tanggal_kadaluwarsa) : (d.stok_obat_id ? 'terpilih' : '');
+            const lokasi = d.nama_obat?.lokasi_penyimpanan || d.lokasi_penyimpanan || '';
+            html += `<tr><td>${d.nama_obat?.nama_obat || d.nama_obat_id}</td><td>${d.jumlah}</td><td>${d.satuan?.satuan_obat || d.satuan_id || ''}</td><td>${lokasi}</td><td>${tgl}</td></tr>`;
         });
         html += `</tbody></table></div>`;
         viewBody.innerHTML = html;
@@ -1093,8 +1095,8 @@
         const namaId = el.dataset.namaId;
         const stokQty = el.dataset.stokQty || '';
         const tanggal = el.dataset.tanggal || '';
-        // prefer lokasi from dataset, fallback to namaMeta if available
-        const lokasi = el.dataset.lokasi || ((namaMeta && namaMeta[namaId] && namaMeta[namaId].lokasi) ? namaMeta[namaId].lokasi : '');
+        // prefer lokasi penyimpanan obat (namaMeta), fallback to dataset
+        const lokasi = ((namaMeta && namaMeta[namaId] && namaMeta[namaId].lokasi) ? namaMeta[namaId].lokasi : '') || el.dataset.lokasi || '';
 
         // clear and insert a single READ-ONLY row (user should not change detail when using per-row Ajukan)
         pemusnahanDetailItems.innerHTML = '';
@@ -1269,6 +1271,32 @@
                 }
             }
         });
+    }
+
+    // Auto submit filter form with debounce.
+    const filterForm = document.querySelector('.table-actions form[method="GET"]');
+    if (filterForm) {
+        const searchField = filterForm.querySelector('input[name="search"]');
+        let filterDebounceTimer = null;
+
+        const submitFilter = () => filterForm.submit();
+        const submitFilterDebounced = (delay = 450) => {
+            if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+            filterDebounceTimer = setTimeout(submitFilter, delay);
+        };
+
+        if (searchField) {
+            searchField.addEventListener('input', function() {
+                submitFilterDebounced(500);
+            });
+
+            searchField.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitFilterDebounced(0);
+                }
+            });
+        }
     }
 </script>
 

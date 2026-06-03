@@ -13,6 +13,7 @@ class PemusnahanObat extends Model
 
     protected $fillable = [
         'user_id',
+        'tanggal_pengajuan',
         'tanggal_pemusnahan',
         'status',
         'approved_by',
@@ -22,6 +23,7 @@ class PemusnahanObat extends Model
     ];
 
     protected $casts = [
+        'tanggal_pengajuan' => 'datetime',
         'tanggal_pemusnahan' => 'datetime',
         'approved_at' => 'datetime',
     ];

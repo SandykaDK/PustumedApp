@@ -59,7 +59,7 @@ class UserController extends Controller
             'name'                  => 'required|string|max:255',
             'email'                 => 'required|email|unique:users,email',
             'no_telepon'            => 'nullable|string|max:20',
-            'role'                  => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu',
+            'role'                  => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu,super_admin',
             'status'                => 'required|in:aktif,nonaktif',
             'password'              => 'required|min:6|confirmed',
             'password_confirmation' => 'required_with:password|same:password',
@@ -90,7 +90,7 @@ class UserController extends Controller
             'name'        => 'required|string|max:255',
             'email'       => 'required|email|unique:users,email,' . $user->id,
             'no_telepon'  => 'nullable|string|max:20',
-            'role'        => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu',
+            'role'        => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu,super_admin',
             'status'      => 'required|in:aktif,nonaktif'
         ];
 
