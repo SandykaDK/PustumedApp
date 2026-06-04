@@ -113,7 +113,7 @@
                 </li>
                 @endif
 
-                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat'))
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat' || auth()->user()->role === 'petugas_administrasi'))
                 <li>
                     <a href="{{ route('nama-obat.index') }}" title="Daftar Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">

@@ -391,7 +391,8 @@
 .permintaan-obat-table td:nth-child(6),
 .permintaan-obat-table td:nth-child(7),
 .permintaan-obat-table td:nth-child(8),
-.permintaan-obat-table td:nth-child(9) {
+.permintaan-obat-table td:nth-child(9),
+.permintaan-obat-table td:nth-child(10) {
     text-align: center;
 }
 

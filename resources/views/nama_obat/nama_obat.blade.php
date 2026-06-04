@@ -100,15 +100,17 @@
                 </form>
 
                 <!-- BUTTON TAMBAH -->
-                <button type="button" id="openCreateModal" class="btn-add">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 24 24" stroke-width="1.5"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    <span>Tambah</span>
-                </button>
+                @if(!(auth()->check() && auth()->user()->role === 'petugas_administrasi'))
+                    <button type="button" id="openCreateModal" class="btn-add">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        <span>Tambah</span>
+                    </button>
+                @endif
             </div>
             <table class="nama-obat-table">
                 <thead>
@@ -153,66 +155,43 @@
                                         </svg>
                                     </button>
 
-                                    <!-- EDIT (open modal) -->
-                                    <button type="button"
-                                        class="action-btn edit openEditModal"
-                                        title="Edit"
-                                        data-id="{{ $namaobat->id }}"
-                                        data-kode_obat="{{ $namaobat->kode_obat }}"
-                                        data-nama_obat="{{ $namaobat->nama_obat }}"
-                                        data-jenis_id="{{ $namaobat->jenis_obat_id }}"
-                                        data-satuan_id="{{ $namaobat->satuan_obat_id }}"
-                                        data-lokasi="{{ $namaobat->lokasi_penyimpanan }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                            viewBox="0 0 24 24" stroke-width="1.5"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m16.862 4.487 1.687-1.688
-                                                a1.875 1.875 0 1 1 2.652 2.652
-                                                L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13
-                                                L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897
-                                                l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75
-                                                A2.25 2.25 0 0 1 15.75 21H5.25
-                                                A2.25 2.25 0 0 1 3 18.75V8.25
-                                                A2.25 2.25 0 0 1 5.25 6H10" />
-                                        </svg>
-                                    </button>
-
-                                    @php
-                                        $isNamaObatUsed =
-                                            ($namaobat->detail_penerimaan_obat_count ?? 0) > 0 ||
-                                            ($namaobat->detail_pengeluaran_obat_count ?? 0) > 0 ||
-                                            ($namaobat->detail_pemusnahan_obat_count ?? 0) > 0 ||
-                                            ($namaobat->stok_obat_count ?? 0) > 0 ||
-                                            ($namaobat->min_max_count ?? 0) > 0;
-                                    @endphp
-
-                                    @if ($isNamaObatUsed)
-                                        <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus karena sudah digunakan pada transaksi/data lain" disabled>
+                                    @unless(auth()->check() && auth()->user()->role === 'petugas_administrasi')
+                                        <!-- EDIT (open modal) -->
+                                        <button type="button"
+                                            class="action-btn edit openEditModal"
+                                            title="Edit"
+                                            data-id="{{ $namaobat->id }}"
+                                            data-kode_obat="{{ $namaobat->kode_obat }}"
+                                            data-nama_obat="{{ $namaobat->nama_obat }}"
+                                            data-jenis_id="{{ $namaobat->jenis_obat_id }}"
+                                            data-satuan_id="{{ $namaobat->satuan_obat_id }}"
+                                            data-lokasi="{{ $namaobat->lokasi_penyimpanan }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                                    d="m14.74 9-.346 9m-4.788 0
-                                                    L9.26 9m9.968-3.21c.342.052.682.107
-                                                    1.022.166m-1.022-.165L18.16 19.673
-                                                    a2.25 2.25 0 0 1-2.244 2.077H8.084
-                                                    a2.25 2.25 0 0 1-2.244-2.077
-                                                    L4.772 5.79m14.456 0
-                                                    a48.108 48.108 0 0 0-3.478-.397
-                                                    m-12 .562c.34-.059.68-.114
-                                                    1.022-.165m0 0a48.11 48.11 0 0 1
-                                                    3.478-.397m7.5 0v-.916
-                                                    c0-1.18-.91-2.164-2.09-2.201
-                                                    a51.964 51.964 0 0 0-3.32 0
-                                                    c-1.18.037-2.09 1.022-2.09 2.201
-                                                    v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    d="m16.862 4.487 1.687-1.688
+                                                    a1.875 1.875 0 1 1 2.652 2.652
+                                                    L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13
+                                                    L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897
+                                                    l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75
+                                                    A2.25 2.25 0 0 1 15.75 21H5.25
+                                                    A2.25 2.25 0 0 1 3 18.75V8.25
+                                                    A2.25 2.25 0 0 1 5.25 6H10" />
                                             </svg>
                                         </button>
-                                    @else
-                                        <!-- DELETE (confirm-delete component) -->
-                                        <x-confirm-delete action="{{ route('nama-obat.destroy', $namaobat->id) }}" :id="'delete-nama-obat-'.$namaobat->id" title="Hapus Nama Obat" message="Yakin ingin menghapus nama obat {{ $namaobat->nama_obat }}?">
-                                            <button type="button" class="action-btn delete" title="Hapus">
+
+                                        @php
+                                            $isNamaObatUsed =
+                                                ($namaobat->detail_penerimaan_obat_count ?? 0) > 0 ||
+                                                ($namaobat->detail_pengeluaran_obat_count ?? 0) > 0 ||
+                                                ($namaobat->detail_pemusnahan_obat_count ?? 0) > 0 ||
+                                                ($namaobat->stok_obat_count ?? 0) > 0 ||
+                                                ($namaobat->min_max_count ?? 0) > 0;
+                                        @endphp
+
+                                        @if ($isNamaObatUsed)
+                                            <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus karena sudah digunakan pada transaksi/data lain" disabled>
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                     viewBox="0 0 24 24" stroke-width="1.5"
                                                     stroke="currentColor">
@@ -233,8 +212,32 @@
                                                         v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                                 </svg>
                                             </button>
-                                        </x-confirm-delete>
-                                    @endif
+                                        @else
+                                            <x-confirm-delete action="{{ route('nama-obat.destroy', $namaobat->id) }}" :id="'delete-nama-obat-'.$namaobat->id" title="Hapus Nama Obat" message="Yakin ingin menghapus nama obat {{ $namaobat->nama_obat }}?">
+                                                <button type="button" class="action-btn delete" title="Hapus">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5"
+                                                        stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="m14.74 9-.346 9m-4.788 0
+                                                            L9.26 9m9.968-3.21c.342.052.682.107
+                                                            1.022.166m-1.022-.165L18.16 19.673
+                                                            a2.25 2.25 0 0 1-2.244 2.077H8.084
+                                                            a2.25 2.25 0 0 1-2.244-2.077
+                                                            L4.772 5.79m14.456 0
+                                                            a48.108 48.108 0 0 0-3.478-.397
+                                                            m-12 .562c.34-.059.68-.114
+                                                            1.022-.165m0 0a48.11 48.11 0 0 1
+                                                            3.478-.397m7.5 0v-.916
+                                                            c0-1.18-.91-2.164-2.09-2.201
+                                                            a51.964 51.964 0 0 0-3.32 0
+                                                            c-1.18.037-2.09 1.022-2.09 2.201
+                                                            v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                </button>
+                                            </x-confirm-delete>
+                                        @endif
+                                    @endunless
 
                                 </div>
                             </td>
@@ -484,7 +487,7 @@
         });
 
         // Auto open create modal if validation errors belong to create
-        @if ($errors->any() && !session('edit_nama_obat_id'))
+        @if ($errors->any() && !session('edit_nama_obat_id') && !(auth()->check() && auth()->user()->role === 'petugas_administrasi'))
             document.addEventListener('DOMContentLoaded', function() { openModal(); });
         @endif
 
@@ -537,7 +540,8 @@
                     }
                 }
                 const lokasiEl = document.getElementById('edit_lokasi_penyimpanan');
-                if (lokasiEl) lokasiEl.value = data.lokasi || '';            } catch (err) {
+                if (lokasiEl) lokasiEl.value = data.lokasi || '';
+            } catch (err) {
                 console.error('populateEditForm error:', err);
             }
         }
@@ -554,7 +558,6 @@
                         lokasi: this.dataset.lokasi || ''
                     };
 
-                    // helpful debug info
                     if (window.console && window.console.log) console.log('edit button clicked, id=', data.id);
 
                     populateEditForm(data);
@@ -609,7 +612,9 @@
 
                 initModalSelect2(editModal);
 
-                openEditModal();
+                @if(!(auth()->check() && auth()->user()->role === 'petugas_administrasi'))
+                    openEditModal();
+                @endif
             });
         }
 

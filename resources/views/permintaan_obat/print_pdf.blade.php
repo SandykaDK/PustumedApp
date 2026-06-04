@@ -23,6 +23,11 @@
             padding: 3px 2px;
             font-size: 8.5px;
             vertical-align: middle;
+            text-align: center;
+        }
+
+        .report-table tbody td:nth-child(2) {
+            text-align: left;
         }
 
         .report-table thead th {
@@ -38,10 +43,11 @@
         }
 
         .w-no { width: 4.5%; }
-        .w-name { width: 18%; }
+        .w-name { width: 17%; }
         .w-sat { width: 4.5%; }
         .w-stok { width: 5%; }
-        .w-compact { width: 7.25%; }
+        .w-prev { width: 6%; }
+        .w-compact { width: 6.5%; }
         .w-note { width: 8.5%; }
 
         .signature-section {
@@ -153,11 +159,12 @@
                     <th class="w-name">Nama Obat</th>
                     <th class="w-sat">Sat</th>
                     <th class="w-stok"><span class="header-stack">Stok<br>Awal</span></th>
+                    <th class="w-prev">Pemberian<br>{{ $previousMonthLabel }}</th>
                     <th class="w-compact">Persediaan</th>
                     <th class="w-compact">Pemakaian</th>
                     <th class="w-stok"><span class="header-stack">Sisa<br>Stok</span></th>
                     <th class="w-compact">Permintaan</th>
-                    <th class="w-compact">Pemberian</th>
+                    <th class="w-compact">Pemberian<br>{{ $monthLabel }} {{ $selectedYear }}</th>
                     <th class="w-note">Keterangan</th>
                 </tr>
             </thead>
@@ -168,11 +175,12 @@
                         <td>{{ $item['nama_obat'] }}</td>
                         <td class="text-center">{{ $item['satuan'] }}</td>
                         <td class="text-right">{{ number_format($item['stok_awal']) }}</td>
+                        <td class="text-right">{{ number_format($item['pemberian_bulan_lalu'] ?? 0) }}</td>
                         <td class="text-right">{{ number_format($item['persediaan']) }}</td>
                         <td class="text-right">{{ number_format($item['pemakaian']) }}</td>
                         <td class="text-right">{{ number_format($item['sisa_stok']) }}</td>
                         <td class="text-right">{{ number_format($item['permintaan']) }}</td>
-                        <td class="text-right">{{ number_format($item['pemberian']) }}</td>
+                        <td class="text-right">{{ $isPermintaanPrint ? '' : number_format($item['pemberian']) }}</td>
                         <td>&nbsp;</td>
                     </tr>
                 @empty

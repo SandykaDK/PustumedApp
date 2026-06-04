@@ -68,6 +68,9 @@ class PermintaanObatController extends Controller
         ];
         $monthLabel = $monthOptions[$selectedMonth];
 
+        $previousMonth = Carbon::create($selectedYear, $selectedMonth, 1)->subMonth();
+        $previousMonthLabel = $monthOptions[$previousMonth->month] . ' ' . $previousMonth->year;
+
         $yearOptions = range($maxYear, $minYear);
 
         $period = (int) $request->get('period', 30);
@@ -107,6 +110,9 @@ class PermintaanObatController extends Controller
         $search = $request->get('search', '');
 
         $startDate = $monthEnd->copy()->subDays($period - 1)->startOfDay();
+
+        $previousMonthStart = $monthStart->copy()->subMonth()->startOfDay();
+        $previousMonthEnd = $previousMonthStart->copy()->endOfMonth();
 
         $periodAverages = DetailPengeluaranObat::select(
             'detail_pengeluaran_obat.nama_obat_id',
@@ -196,6 +202,19 @@ class PermintaanObatController extends Controller
             ->get()
             ->keyBy('nama_obat_id');
 
+        $previousMonthIncoming = DetailPenerimaanObat::select(
+            'detail_penerimaan_obat.nama_obat_id',
+            DB::raw('SUM(detail_penerimaan_obat.jumlah_masuk) as total_masuk')
+        )
+            ->join('penerimaan_obat', 'penerimaan_obat.id', '=', 'detail_penerimaan_obat.penerimaan_obat_id')
+            ->whereBetween('penerimaan_obat.tanggal_penerimaan', [
+                $previousMonthStart->toDateString(),
+                $previousMonthEnd->toDateString(),
+            ])
+            ->groupBy('detail_penerimaan_obat.nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
         $namaObats = NamaObat::with([
             'minMaxRecords' => function ($builder) use ($selectedYear, $selectedMonth) {
                 $builder->where('periode_year', $selectedYear)
@@ -204,7 +223,7 @@ class PermintaanObatController extends Controller
             'satuanObat',
         ])->orderBy('nama_obat')->get();
 
-        $items = $namaObats->map(function ($obat) use ($periodAverages, $monthlyIncoming, $monthlyUsage, $incomingBeforeMonth, $usageBeforeMonth, $pemusnahanMonthly, $pemusnahanBeforeMonth, $leadTime, $bufferDays) {
+        $items = $namaObats->map(function ($obat) use ($periodAverages, $monthlyIncoming, $monthlyUsage, $incomingBeforeMonth, $usageBeforeMonth, $pemusnahanMonthly, $pemusnahanBeforeMonth, $previousMonthIncoming, $leadTime, $bufferDays) {
             $incomingBefore = (int) ($incomingBeforeMonth->get($obat->id)->total_masuk ?? 0);
             $usageBefore = (int) ($usageBeforeMonth->get($obat->id)->total_keluar ?? 0);
             $pemusnahanBefore = (int) ($pemusnahanBeforeMonth->get($obat->id)->total_dimusnahkan ?? 0);
@@ -213,6 +232,7 @@ class PermintaanObatController extends Controller
             // Kolom "Pemberian" menampilkan total stok masuk pada periode yang dipilih.
             // Nilai ini dipakai untuk menghitung "Persediaan" = stok awal + pemberian.
             $pemberian = (int) ($monthlyIncoming->get($obat->id)->total_masuk ?? 0);
+            $pemberianBulanLalu = (int) ($previousMonthIncoming->get($obat->id)->total_masuk ?? 0);
             $persediaan = $stokAwal + $pemberian;
             $pemakaian = (int) ($monthlyUsage->get($obat->id)->total_keluar ?? 0);
             $pemusnahan = (int) ($pemusnahanMonthly->get($obat->id)->total_dimusnahkan ?? 0);
@@ -249,6 +269,7 @@ class PermintaanObatController extends Controller
                 'nama_obat' => $obat->nama_obat,
                 'satuan' => $obat->satuanObat->satuan_obat ?? '-',
                 'stok_awal' => $stokAwal,
+                'pemberian_bulan_lalu' => $pemberianBulanLalu,
                 'pemberian' => $pemberian,
                 'persediaan' => $persediaan,
                 'pemakaian' => $pemakaian,
@@ -284,7 +305,10 @@ class PermintaanObatController extends Controller
 
         $items = $items->values();
 
-        if ($request->has('print')) {
+        $printType = $request->get('print');
+        $isPermintaanPrint = $printType === 'permintaan';
+
+        if ($printType) {
             $pdf = Pdf::loadView(
                 'permintaan_obat.print_pdf',
                 compact(
@@ -299,15 +323,19 @@ class PermintaanObatController extends Controller
                     'selectedMonth',
                     'selectedYear',
                     'monthLabel',
+                    'previousMonthLabel',
                     'monthOptions',
                     'monthStart',
                     'monthEnd',
                     'isReportFinal',
-                    'reportNotice'
+                    'reportNotice',
+                    'isPermintaanPrint'
                 )
             );
             $pdf->setPaper('a4', 'landscape');
-            $filename = 'permintaan_obat_' . date('Y-m-d_His') . '.pdf';
+            $filename = $isPermintaanPrint
+                ? 'laporan_permintaan_obat_' . date('Y-m-d_His') . '.pdf'
+                : 'laporan_pemakaian_obat_' . date('Y-m-d_His') . '.pdf';
 
             return $pdf->download($filename);
         }
@@ -348,6 +376,7 @@ class PermintaanObatController extends Controller
                 'selectedMonth',
                 'selectedYear',
                 'monthYearValue',
+                'previousMonthLabel',
                 'monthLabel',
                 'monthOptions',
                 'yearOptions',

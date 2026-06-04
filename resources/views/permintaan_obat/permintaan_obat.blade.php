@@ -52,11 +52,18 @@
                                 <span>Reset</span>
                             </a>
 
-                            <button type="submit" name="print" value="1" class="btn-filter btn-print" @if(!empty($reportNotice)) data-confirm-message="{{ $reportNotice }}" @endif>
+                            <button type="submit" name="print" value="laporan" class="btn-filter btn-print" @if(!empty($reportNotice)) data-confirm-message="{{ $reportNotice }}" @endif>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                 </svg>
-                                <span>Cetak</span>
+                                <span>Cetak Laporan</span>
+                            </button>
+
+                            <button type="submit" name="print" value="permintaan" class="btn-filter btn-print" @if(!empty($reportNotice)) data-confirm-message="{{ $reportNotice }}" @endif>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                <span>Cetak Permintaan</span>
                             </button>
                         </div>
                     </form>
@@ -87,11 +94,12 @@
                                 <th>Nama Obat</th>
                                 <th>Sat</th>
                                 <th>Stok Awal</th>
+                                <th>Pemberian {{ $previousMonthLabel }}</th>
                                 <th>Persediaan</th>
                                 <th>Pemakaian</th>
                                 <th>Sisa Stok</th>
                                 <th>Permintaan</th>
-                                <th>Pemberian</th>
+                                <th>Pemberian {{ $monthLabel }} {{ $selectedYear }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,6 +109,7 @@
                                     <td>{{ $item['nama_obat'] }}</td>
                                     <td>{{ $item['satuan'] }}</td>
                                     <td>{{ number_format($item['stok_awal']) }}</td>
+                                    <td>{{ number_format($item['pemberian_bulan_lalu'] ?? 0) }}</td>
                                     <td>{{ number_format($item['persediaan']) }}</td>
                                     <td>{{ number_format($item['pemakaian']) }}</td>
                                     <td>{{ number_format($item['sisa_stok']) }}</td>
@@ -109,7 +118,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="empty">Tidak ada data permintaan obat</td>
+                                    <td colspan="10" class="empty">Tidak ada data permintaan obat</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -147,7 +156,7 @@
 
         const searchField = filterForm.querySelector('input[name="search"]');
         const filterFields = filterForm.querySelectorAll('select, input[type="date"], input[type="month"]');
-        const printButton = filterForm.querySelector('button[name="print"]');
+        const printButtons = filterForm.querySelectorAll('button[name="print"]');
         const printModal = document.getElementById('draftPrintModal');
         const printModalMessage = document.getElementById('draftPrintMessage');
         const printModalConfirm = document.getElementById('draftPrintConfirm');
@@ -180,18 +189,22 @@
             });
         });
 
+        let printSubmitter = null;
+
         filterForm.addEventListener('submit', function(event) {
             if (printSubmitBypass) {
                 printSubmitBypass = false;
+                printSubmitter = null;
                 return;
             }
 
             const submitter = event.submitter || document.activeElement;
-            const isPrintSubmit = submitter && submitter === printButton;
-            const confirmMessage = printButton ? printButton.dataset.confirmMessage : null;
+            const isPrintSubmit = submitter && submitter.name === 'print';
+            const confirmMessage = submitter ? submitter.dataset.confirmMessage : null;
 
             if (isPrintSubmit && confirmMessage && printModal) {
                 event.preventDefault();
+                printSubmitter = submitter;
                 openPrintModal(confirmMessage + ' Lanjut cetak draft?');
             }
         });
@@ -216,7 +229,11 @@
             printModalConfirm.addEventListener('click', function() {
                 closePrintModal();
                 printSubmitBypass = true;
-                filterForm.requestSubmit(printButton);
+                if (printSubmitter) {
+                    filterForm.requestSubmit(printSubmitter);
+                } else if (printButtons.length > 0) {
+                    filterForm.requestSubmit(printButtons[0]);
+                }
             });
         }
 

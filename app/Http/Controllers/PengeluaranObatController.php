@@ -288,7 +288,12 @@ class PengeluaranObatController extends Controller
 
     public function destroy(PengeluaranObat $pengeluaranObat)
     {
+        DB::beginTransaction();
+
         try {
+            $affectedNamaObatIds = [];
+            $pengeluaranTanggal = $pengeluaranObat->tanggal_pengeluaran;
+
             // Revert stok untuk semua detail items
             foreach ($pengeluaranObat->detailPengeluaranObat as $detail) {
                 $stokObat = StokObat::find($detail->stok_obat_id);
@@ -296,15 +301,20 @@ class PengeluaranObatController extends Controller
                     $stokObat->increment('stok', $detail->jumlah_keluar);
                 }
 
-                // Hitung dan simpan Min-Max
-                (new MinMaxService())->calculateAndUpdate($detail->nama_obat_id, $pengeluaranObat->tanggal_pengeluaran);
+                $affectedNamaObatIds[] = $detail->nama_obat_id;
             }
 
             $pengeluaranObat->detailPengeluaranObat()->delete();
             $pengeluaranObat->delete();
 
+            foreach (array_unique($affectedNamaObatIds) as $namaObatId) {
+                (new MinMaxService())->calculateAndUpdate($namaObatId, $pengeluaranTanggal);
+            }
+
+            DB::commit();
             return redirect()->route('pengeluaran-obat.index')->with('success', 'Pengeluaran obat berhasil dihapus');
         } catch (\Exception $e) {
+            DB::rollBack();
             return back()->with('error', 'Gagal menghapus pengeluaran obat: ' . $e->getMessage());
         }
     }

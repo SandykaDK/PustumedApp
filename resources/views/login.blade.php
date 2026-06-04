@@ -51,13 +51,6 @@
                     @enderror
                 </div>
 
-                <div class="remember-forgot">
-                    <label style="display: flex; align-items: center;">
-                        <input type="checkbox" name="remember">
-                        <span>Ingat saya</span>
-                    </label>
-                </div>
-
                 <button type="submit" class="btn-login">Login</button>
             </form>
         </div>

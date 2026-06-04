@@ -35,9 +35,10 @@ class MinMaxService
         $totalMonthlyUsage = (int) ($usageSummary->total_qty ?? 0);
         $usageDays = (int) ($usageSummary->usage_days ?? 0);
         $maxPerDay = (int) ($usageSummary->max_daily_usage ?? 0);
-        $rataRataPengeluaran = round($usageDays > 0 ? ($totalMonthlyUsage / $usageDays) : 0, 2);
+        $totalDaysInMonth = (int) $monthStart->diffInDays($monthEnd) + 1;
+        $rataRataPengeluaran = round($totalDaysInMonth > 0 ? ($totalMonthlyUsage / $totalDaysInMonth) : 0, 2);
 
-        Log::info("Monthly usage for obat $namaObatId: total=$totalMonthlyUsage, usage_days=$usageDays, avg=$rataRataPengeluaran, max_daily=$maxPerDay");
+        Log::info("Monthly usage for obat $namaObatId: total=$totalMonthlyUsage, usage_days=$usageDays, month_days=$totalDaysInMonth, avg=$rataRataPengeluaran, max_daily=$maxPerDay");
 
         // Jika belum ada data pada bulan berjalan, pakai fallback terakhir sebelum tanggal kalkulasi
         if ($totalMonthlyUsage === 0) {
@@ -60,7 +61,7 @@ class MinMaxService
         $maximumStock = (int) ceil(2 * ($rataRataPengeluaran * $leadTime) + $safetyStock);
 
         // Reorder Point (ROP): Maximum Stock - Minimum Stock
-        $reorderPoint = (int) ceil($maximumStock - $minimumStock);
+        $reorderPoint = (int) ceil(($rataRataPengeluaran * $leadTime) + $safetyStock);
 
         // Save atau update ke tabel min_max
         $minMax = $namaObat->minMaxRecords()->updateOrCreate(
