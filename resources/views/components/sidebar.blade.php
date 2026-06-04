@@ -58,6 +58,7 @@
             </button>
 
             <ul class="sidebar-submenu">
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'kepala_pustu'))
                 <li>
                     <a href="{{ route('users.index') }}" title="Daftar User">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -66,6 +67,9 @@
                         <span>Daftar User</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_administrasi'))
                 <li>
                     <a href="{{ route('pasien.index') }}" title="Daftar Pasien">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -74,6 +78,9 @@
                         <span>Daftar Pasien</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'kepala_pustu'))
                 <li>
                     <a href="{{ route('dokter.index') }}" title="Daftar Dokter">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -82,6 +89,9 @@
                         <span>Daftar Dokter</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat'))
                 <li>
                     <a href="{{ route('jenis-obat.index') }}" title="Jenis Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -90,6 +100,9 @@
                         <span>Jenis Obat</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat'))
                 <li>
                     <a href="{{ route('satuan-obat.index') }}" title="Satuan Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -98,6 +111,9 @@
                         <span>Satuan Obat</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat'))
                 <li>
                     <a href="{{ route('nama-obat.index') }}" title="Daftar Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -106,6 +122,7 @@
                         <span>Daftar Obat</span>
                     </a>
                 </li>
+                @endif
             </ul>
         </div>
 
@@ -128,6 +145,7 @@
             </button>
 
             <ul class="sidebar-submenu">
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_obat'))
                 <li>
                     <a href="{{ route('penerimaan-obat.index') }}" title="Penerimaan Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -136,6 +154,9 @@
                         <span>Penerimaan Obat</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'petugas_administrasi'))
                 <li>
                     <a href="{{ route('pengeluaran-obat.index') }}" title="Pengeluaran Obat">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -144,6 +165,9 @@
                         <span>Pengeluaran Obat</span>
                     </a>
                 </li>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->role === 'super_admin' || in_array(auth()->user()->role, ['petugas_obat', 'kepala_pustu'])))
                 <li>
                     <a href="{{ route('pemusnahan-obat.index') }}" title="Pemusnahan Obat" class="sidebar-link-with-badge {{ request()->routeIs('pemusnahan-obat.*') ? 'active' : '' }}">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
@@ -154,13 +178,15 @@
                             <span class="sidebar-badge" aria-label="{{ $sidebarApprovedPemusnahanCount }} pemusnahan sudah disetujui menunggu tindakan">
                                 {{ $sidebarApprovedPemusnahanCount > 99 ? '99+' : $sidebarApprovedPemusnahanCount }}
                             </span>
-                        @elseif(($sidebarPendingPemusnahanCount ?? 0) > 0)
+                        @elseif(auth()->check() && auth()->user()->role === 'kepala_pustu' && ($sidebarPendingPemusnahanCount ?? 0) > 0)
                             <span class="sidebar-badge" aria-label="{{ $sidebarPendingPemusnahanCount }} pengajuan pemusnahan menunggu persetujuan">
                                 {{ $sidebarPendingPemusnahanCount > 99 ? '99+' : $sidebarPendingPemusnahanCount }}
                             </span>
                         @endif
                     </a>
                 </li>
+                @endif
+
                 <li>
                     @if(auth()->check() && auth()->user()->role === 'super_admin')
                     <a href="{{ route('min-max.index') }}" title="Min Max" class="{{ request()->routeIs('min-max.*') ? 'active' : '' }}">
@@ -175,7 +201,7 @@
         </div>
 
         <!-- Laporan -->
-        <div class="sidebar-section open" data-section="Laporan">
+        @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'kepala_pustu'))
             <button class="sidebar-section-toggle">
                 <div class="section-left">
                     <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -201,20 +227,16 @@
                         <span>Laporan Permintaan Obat</span>
                     </a>
                 </li>
-            </ul>
-            <ul class="sidebar-submenu">
                 <li>
-                    <a href="{{ route('laporan-obat-kadaluwarsa.index') }}" title="Laporan Obat Kadaluwarsa">
+                    <a href="{{ route('laporan-obat-kadaluwarsa.index') }}" title="Laporan Obat Kadaluwarsa" class="{{ request()->routeIs('laporan-obat-kadaluwarsa.*') ? 'active' : '' }}">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                         </svg>
                         <span>Laporan Obat Kadaluwarsa</span>
                     </a>
                 </li>
-            </ul>
-            <ul class="sidebar-submenu">
                 <li>
-                    <a href="{{ route('laporan-pemusnahan-obat.index') }}" title="Laporan Pemusnahan Obat">
+                    <a href="{{ route('laporan-pemusnahan-obat.index') }}" title="Laporan Pemusnahan Obat" class="{{ request()->routeIs('laporan-pemusnahan-obat.*') ? 'active' : '' }}">
                         <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                         </svg>
@@ -223,6 +245,7 @@
                 </li>
             </ul>
         </div>
+        @endif
 
         {{-- <ul class="sidebar-menu">
             <li>

@@ -45,9 +45,9 @@
                         <option value="all">Semua Status</option>
                         <option value="stok_habis">Stok Habis</option>
                         <option value="perlu_pengadaan">Perlu Pengadaan</option>
-                        <option value="kadaluarsa">Sudah Kadaluarsa</option>
+                        <option value="kadaluarsa">Sudah Kadaluwarsa</option>
                         <option value="mendekati_kadaluarsa">Mendekati Kadaluarsa</option>
-                        <option value="belum_minmax">Belum Ada Min-Max</option>
+                        {{-- <option value="belum_minmax">Belum Ada Min-Max</option> --}}
                     </select>
                 </div>
                 <div class="priority-table-meta">
@@ -144,13 +144,13 @@
         <div class="charts-row two-col">
             <div class="chart-card compact">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h4 style="margin: 0;">Penerimaan Obat per Bulan</h4>
+                    <h3 style="margin: 0;">Penerimaan Obat per Bulan</h3>
                     <select id="yearFilterReceipts" style="padding: 0.5rem; border-radius: 0.25rem; border: 1px solid #d1d5db;">
-                        <option value="all">Semua Tahun</option>
                         @php
                             $currentYear = now()->year;
                             for ($year = $currentYear; $year >= $currentYear - 5; $year--) {
-                                echo "<option value=\"$year\">$year</option>";
+                                $selected = ($year === $currentYear) ? 'selected' : '';
+                                echo "<option value=\"$year\" $selected>$year</option>";
                             }
                         @endphp
                     </select>
@@ -161,11 +161,11 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h4 style="margin: 0;">Pengeluaran Obat per Bulan</h4>
                     <select id="yearFilterIssues" style="padding: 0.5rem; border-radius: 0.25rem; border: 1px solid #d1d5db;">
-                        <option value="all">Semua Tahun</option>
                         @php
                             $currentYear = now()->year;
                             for ($year = $currentYear; $year >= $currentYear - 5; $year--) {
-                                echo "<option value=\"$year\">$year</option>";
+                                $selected = ($year === $currentYear) ? 'selected' : '';
+                                echo "<option value=\"$year\" $selected>$year</option>";
                             }
                         @endphp
                     </select>
@@ -179,6 +179,32 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const monthsIndonesian = {
+            'January': 'Januari',
+            'February': 'Februari',
+            'March': 'Maret',
+            'April': 'April',
+            'May': 'Mei',
+            'June': 'Juni',
+            'July': 'Juli',
+            'August': 'Agustus',
+            'September': 'September',
+            'October': 'Oktober',
+            'November': 'November',
+            'December': 'Desember'
+        };
+
+        const convertToIndonesianMonths = (monthsArray) => {
+            return monthsArray.map(month => {
+                // Handle format like "May 2026"
+                const parts = month.split(' ');
+                if (parts.length === 2 && monthsIndonesian[parts[0]]) {
+                    return monthsIndonesian[parts[0]] + ' ' + parts[1];
+                }
+                return month;
+            });
+        };
+
         const priorityStatusFilter = document.getElementById('priorityStatusFilter');
         const priorityTable = document.getElementById('priorityTable');
 
@@ -206,8 +232,11 @@
             applyPriorityFilter();
         }
 
-        let months = {!! json_encode($chartMonths ?? []) !!};
+        // Separate data for receipts and issues charts
+        let receiptsMonths = convertToIndonesianMonths({!! json_encode($chartMonths ?? []) !!});
         let receipts = {!! json_encode($chartReceiptsData ?? []) !!};
+
+        let issuesMonths = convertToIndonesianMonths({!! json_encode($chartMonths ?? []) !!});
         let issues = {!! json_encode($chartIssuesData ?? []) !!};
 
         let receiptsChart = null;
@@ -223,7 +252,7 @@
                 receiptsChart = new Chart(receiptsContext, {
                     type: 'line',
                     data: {
-                        labels: months,
+                        labels: receiptsMonths,
                         datasets: [{
                             label: 'Penerimaan',
                             data: receipts,
@@ -254,7 +283,7 @@
                 issuesChart = new Chart(issuesContext, {
                     type: 'line',
                     data: {
-                        labels: months,
+                        labels: issuesMonths,
                         datasets: [{
                             label: 'Pengeluaran',
                             data: issues,
@@ -294,7 +323,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.chartMonths && data.chartReceiptsData) {
-                        months = data.chartMonths;
+                        receiptsMonths = convertToIndonesianMonths(data.chartMonths);
                         receipts = data.chartReceiptsData;
                         initReceiptsChart();
                     }
@@ -319,7 +348,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.chartMonths && data.chartIssuesData) {
-                        months = data.chartMonths;
+                        issuesMonths = convertToIndonesianMonths(data.chartMonths);
                         issues = data.chartIssuesData;
                         initIssuesChart();
                     }

@@ -26,7 +26,150 @@ class DashboardController extends Controller
             abort(403);
         }
 
-        return view('dashboard', $this->buildDashboardData($user));
+        $data = $this->buildDashboardData($user);
+
+        // Handle AJAX requests for petugas_obat dashboard chart filters
+        if (request()->header('X-Requested-With') === 'XMLHttpRequest' && $data['dashboardType'] === 'petugas_obat') {
+            $today = Carbon::today();
+            $response = [];
+
+            // Check if receipts year filter is being requested
+            if (request()->has('year_receipts')) {
+                $chartYear = (int) request('year_receipts', $today->year);
+                $chartMonths = [];
+                $chartReceiptsData = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $monthDate = Carbon::createFromDate($chartYear, $month, 1);
+                    $chartMonths[] = $monthDate->format('M Y');
+                    $chartReceiptsData[] = PenerimaanObat::whereBetween('tanggal_penerimaan', [
+                        $monthDate->copy()->startOfMonth()->toDateString(),
+                        $monthDate->copy()->endOfMonth()->toDateString(),
+                    ])->count();
+                }
+                $response['chartMonths'] = $chartMonths;
+                $response['chartReceiptsData'] = $chartReceiptsData;
+            }
+
+            // Check if issues year filter is being requested
+            if (request()->has('year_issues')) {
+                $chartYear = (int) request('year_issues', $today->year);
+                $chartMonths = [];
+                $chartIssuesData = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $monthDate = Carbon::createFromDate($chartYear, $month, 1);
+                    $chartMonths[] = $monthDate->format('M Y');
+                    $chartIssuesData[] = PengeluaranObat::whereBetween('tanggal_pengeluaran', [
+                        $monthDate->copy()->startOfMonth()->toDateString(),
+                        $monthDate->copy()->endOfMonth()->toDateString(),
+                    ])->count();
+                }
+                $response['chartMonths'] = $chartMonths;
+                $response['chartIssuesData'] = $chartIssuesData;
+            }
+
+            return response()->json($response);
+        }
+
+        // Handle AJAX requests for kepala_pustu dashboard chart filters
+        if (request()->header('X-Requested-With') === 'XMLHttpRequest' && $data['dashboardType'] === 'kepala_pustu') {
+            $today = Carbon::today();
+            $response = [];
+
+            // Check if receipts year filter is being requested
+            if (request()->has('chart_year_receipts')) {
+                $chartYear = (int) request('chart_year_receipts', $today->year);
+                $chartMonths = [];
+                $chartReceiptsData = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $monthDate = Carbon::createFromDate($chartYear, $month, 1)->locale('id');
+                    $chartMonths[] = $monthDate->translatedFormat('M Y');
+                    $chartReceiptsData[] = PenerimaanObat::whereBetween('tanggal_penerimaan', [
+                        $monthDate->copy()->startOfMonth()->toDateString(),
+                        $monthDate->copy()->endOfMonth()->toDateString(),
+                    ])->count();
+                }
+                $response['chartReceiptsMonths'] = $chartMonths;
+                $response['chartReceiptsData'] = $chartReceiptsData;
+            }
+
+            // Check if issues year filter is being requested
+            if (request()->has('chart_year_issues')) {
+                $chartYear = (int) request('chart_year_issues', $today->year);
+                $chartMonths = [];
+                $chartIssuesData = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $monthDate = Carbon::createFromDate($chartYear, $month, 1)->locale('id');
+                    $chartMonths[] = $monthDate->translatedFormat('M Y');
+                    $chartIssuesData[] = PengeluaranObat::whereBetween('tanggal_pengeluaran', [
+                        $monthDate->copy()->startOfMonth()->toDateString(),
+                        $monthDate->copy()->endOfMonth()->toDateString(),
+                    ])->count();
+                }
+                $response['chartIssuesMonths'] = $chartMonths;
+                $response['chartIssuesData'] = $chartIssuesData;
+            }
+
+            // Check if topused year filter is being requested
+            if (request()->has('chart_year_topused')) {
+                $chartYear = (int) request('chart_year_topused', $today->year);
+                $chartStart = Carbon::createFromDate($chartYear, 1, 1)->startOfYear()->toDateString();
+                $chartEnd = Carbon::createFromDate($chartYear, 12, 31)->endOfYear()->toDateString();
+
+                $topUsedQuery = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+                    ->whereHas('pengeluaranObat', function ($query) use ($chartStart, $chartEnd) {
+                        $query->whereBetween('tanggal_pengeluaran', [$chartStart, $chartEnd]);
+                    })
+                    ->groupBy('nama_obat_id')
+                    ->orderByDesc('total')
+                    ->with('namaObat')
+                    ->limit(10)
+                    ->get();
+
+                $topUsedLabels = $topUsedQuery->map(fn($r) => $r->namaObat?->nama_obat ?? '—')->toArray();
+                $topUsedData = $topUsedQuery->map(fn($r) => (int)$r->total)->toArray();
+
+                $response['topUsedLabels'] = $topUsedLabels;
+                $response['topUsedData'] = $topUsedData;
+            }
+
+            // Check if fastslow year filter is being requested
+            if (request()->has('chart_year_fastslow')) {
+                $chartYear = (int) request('chart_year_fastslow', $today->year);
+                $chartStart = Carbon::createFromDate($chartYear, 1, 1)->startOfYear()->toDateString();
+                $chartEnd = Carbon::createFromDate($chartYear, 12, 31)->endOfYear()->toDateString();
+
+                $fastMoving = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+                    ->whereHas('pengeluaranObat', function ($query) use ($chartStart, $chartEnd) {
+                        $query->whereBetween('tanggal_pengeluaran', [$chartStart, $chartEnd]);
+                    })
+                    ->with('namaObat')
+                    ->groupBy('nama_obat_id')
+                    ->orderByDesc('total')
+                    ->limit(5)
+                    ->get();
+
+                $slowMoving = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+                    ->whereHas('pengeluaranObat', function ($query) use ($chartStart, $chartEnd) {
+                        $query->whereBetween('tanggal_pengeluaran', [$chartStart, $chartEnd]);
+                    })
+                    ->with('namaObat')
+                    ->groupBy('nama_obat_id')
+                    ->orderBy('total')
+                    ->limit(5)
+                    ->get();
+
+                $response['fastMoving'] = $fastMoving;
+                $response['slowMoving'] = $slowMoving;
+            }
+
+            return response()->json($response);
+        }
+
+        return view('dashboard', $data);
     }
 
     private function buildDashboardData($user): array
@@ -168,16 +311,29 @@ class DashboardController extends Controller
         $chartMonths = [];
         $chartReceiptsData = [];
         $chartIssuesData = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $month = $today->copy()->subMonths($i);
-            $chartMonths[] = $month->format('M Y');
+
+        // Get year from request for receipts, default to current year
+        $chartYearReceipts = (int) request('year_receipts', $today->year);
+
+        // Generate chart for receipts - all 12 months of the selected year
+        for ($month = 1; $month <= 12; $month++) {
+            $monthDate = Carbon::createFromDate($chartYearReceipts, $month, 1);
+            $chartMonths[] = $monthDate->format('M Y');
             $chartReceiptsData[] = PenerimaanObat::whereBetween('tanggal_penerimaan', [
-                $month->copy()->startOfMonth()->toDateString(),
-                $month->copy()->endOfMonth()->toDateString(),
+                $monthDate->copy()->startOfMonth()->toDateString(),
+                $monthDate->copy()->endOfMonth()->toDateString(),
             ])->count();
+        }
+
+        // Generate chart for issues - all 12 months of the selected year
+        $chartYearIssues = (int) request('year_issues', $today->year);
+        $chartIssuesMonths = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $monthDate = Carbon::createFromDate($chartYearIssues, $month, 1);
+            $chartIssuesMonths[] = $monthDate->format('M Y');
             $chartIssuesData[] = PengeluaranObat::whereBetween('tanggal_pengeluaran', [
-                $month->copy()->startOfMonth()->toDateString(),
-                $month->copy()->endOfMonth()->toDateString(),
+                $monthDate->copy()->startOfMonth()->toDateString(),
+                $monthDate->copy()->endOfMonth()->toDateString(),
             ])->count();
         }
 
