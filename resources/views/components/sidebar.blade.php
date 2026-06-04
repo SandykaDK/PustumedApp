@@ -202,6 +202,7 @@
 
         <!-- Laporan -->
         @if(auth()->check() && (auth()->user()->role === 'super_admin' || auth()->user()->role === 'kepala_pustu'))
+        <div class="sidebar-section open" data-section="Laporan">
             <button class="sidebar-section-toggle">
                 <div class="section-left">
                     <svg class="heroicon-sidebar" xmlns="http://www.w3.org/2000/svg" fill="none"
