@@ -1,41 +1,37 @@
 <div class="petugas-obat-dashboard">
-    <div class="stats-grid petugas-stats-grid">
-        @foreach($dashboardStats ?? [] as $stat)
-            <div class="stat-card">
-                <div class="stat-icon {{ $stat['tone'] ?? 'blue' }}">{{ $stat['icon'] ?? '•' }}</div>
-                <h3>{{ $stat['label'] ?? '-' }}</h3>
-                <div class="value">{{ $stat['value'] ?? '0' }}</div>
-            </div>
-        @endforeach
-        <!-- Pemusnahan status cards: show separate cards for each status -->
-        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-            <div class="stat-icon gray">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h6M7 11h6M7 15h6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4a1 1 0 0 0 1 1h4M5 21h14a2 2 0 0 0 2-2V7L14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg>
-            </div>
-            <h3>Belum Diajukan</h3>
-            <div class="value">{{ number_format($pemusnahanCounts['belum_diajukan'] ?? 0) }}</div>
-        </a>
-        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-            <div class="stat-icon orange">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
-            </div>
-            <h3>Sudah Diajukan</h3>
-            <div class="value">{{ number_format($pemusnahanCounts['sudah_diajukan'] ?? 0) }}</div>
-        </a>
-        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_disetujui']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-            <div class="stat-icon green">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
-            </div>
-            <h3>Sudah Disetujui</h3>
-            <div class="value">{{ number_format($pemusnahanCounts['sudah_disetujui'] ?? 0) }}</div>
-        </a>
-        <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dimusnahkan']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-            <div class="stat-icon purple">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-            </div>
-            <h3>Sudah Dimusnahkan</h3>
-            <div class="value">{{ number_format($pemusnahanCounts['sudah_dimusnahkan'] ?? 0) }}</div>
-        </a>
+    <div class="pemusnahan-container" style="background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+        <h2 style="margin-bottom: 1rem; margin-top: 0;">Status Pemusnahan Obat</h2>
+        <div class="stats-grid petugas-stats-grid">
+            <!-- Pemusnahan status cards: show separate cards for each status -->
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f3f4f6;">
+                <div class="stat-icon gray">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h6M7 11h6M7 15h6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4a1 1 0 0 0 1 1h4M5 21h14a2 2 0 0 0 2-2V7L14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg>
+                </div>
+                <h3 style="font-size: 1rem;">Belum Diajukan</h3>
+                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['belum_diajukan'] ?? 0) }}</div>
+            </a>
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #fef3c7;">
+                <div class="stat-icon orange">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+                </div>
+                <h3 style="font-size: 1rem;">Sudah Diajukan</h3>
+                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_diajukan'] ?? 0) }}</div>
+            </a>
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_disetujui']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #dcfce7;">
+                <div class="stat-icon green">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
+                </div>
+                <h3 style="font-size: 1rem;">Sudah Disetujui</h3>
+                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_disetujui'] ?? 0) }}</div>
+            </a>
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dimusnahkan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f3e8ff;">
+                <div class="stat-icon purple">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                </div>
+                <h3 style="font-size: 1rem;">Sudah Dimusnahkan</h3>
+                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_dimusnahkan'] ?? 0) }}</div>
+            </a>
+        </div>
     </div>
 
     <div class="petugas-top-grid">
@@ -147,11 +143,33 @@
     <div class="dashboard-charts">
         <div class="charts-row two-col">
             <div class="chart-card compact">
-                <h4>Penerimaan Obat per Bulan</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0;">Penerimaan Obat per Bulan</h4>
+                    <select id="yearFilterReceipts" style="padding: 0.5rem; border-radius: 0.25rem; border: 1px solid #d1d5db;">
+                        <option value="all">Semua Tahun</option>
+                        @php
+                            $currentYear = now()->year;
+                            for ($year = $currentYear; $year >= $currentYear - 5; $year--) {
+                                echo "<option value=\"$year\">$year</option>";
+                            }
+                        @endphp
+                    </select>
+                </div>
                 <canvas id="chartReceipts" height="95"></canvas>
             </div>
             <div class="chart-card compact">
-                <h4>Pengeluaran Obat per Bulan</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="margin: 0;">Pengeluaran Obat per Bulan</h4>
+                    <select id="yearFilterIssues" style="padding: 0.5rem; border-radius: 0.25rem; border: 1px solid #d1d5db;">
+                        <option value="all">Semua Tahun</option>
+                        @php
+                            $currentYear = now()->year;
+                            for ($year = $currentYear; $year >= $currentYear - 5; $year--) {
+                                echo "<option value=\"$year\">$year</option>";
+                            }
+                        @endphp
+                    </select>
+                </div>
                 <canvas id="chartIssues" height="95"></canvas>
             </div>
         </div>
@@ -188,59 +206,125 @@
             applyPriorityFilter();
         }
 
-        const months = {!! json_encode($chartMonths ?? []) !!};
-        const receipts = {!! json_encode($chartReceiptsData ?? []) !!};
-        const issues = {!! json_encode($chartIssuesData ?? []) !!};
+        let months = {!! json_encode($chartMonths ?? []) !!};
+        let receipts = {!! json_encode($chartReceiptsData ?? []) !!};
+        let issues = {!! json_encode($chartIssuesData ?? []) !!};
 
-        const receiptsCanvas = document.getElementById('chartReceipts');
-        if (receiptsCanvas) {
-            const receiptsContext = receiptsCanvas.getContext('2d');
-            new Chart(receiptsContext, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: 'Penerimaan',
-                        data: receipts,
-                        borderColor: '#16a34a',
-                        backgroundColor: 'rgba(22, 163, 74, 0.08)',
-                        tension: 0.3,
-                        fill: true,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } }
-                    }
+        let receiptsChart = null;
+        let issuesChart = null;
+
+        const initReceiptsChart = () => {
+            const receiptsCanvas = document.getElementById('chartReceipts');
+            if (receiptsCanvas) {
+                if (receiptsChart) {
+                    receiptsChart.destroy();
                 }
+                const receiptsContext = receiptsCanvas.getContext('2d');
+                receiptsChart = new Chart(receiptsContext, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Penerimaan',
+                            data: receipts,
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                            tension: 0.3,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+        };
+
+        const initIssuesChart = () => {
+            const issuesCanvas = document.getElementById('chartIssues');
+            if (issuesCanvas) {
+                if (issuesChart) {
+                    issuesChart.destroy();
+                }
+                const issuesContext = issuesCanvas.getContext('2d');
+                issuesChart = new Chart(issuesContext, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Pengeluaran',
+                            data: issues,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.08)',
+                            tension: 0.3,
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+        };
+
+        initReceiptsChart();
+        initIssuesChart();
+
+        // Handle year filter for receipts chart
+        const yearFilterReceipts = document.getElementById('yearFilterReceipts');
+        if (yearFilterReceipts) {
+            yearFilterReceipts.addEventListener('change', function() {
+                const year = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('year_receipts', year);
+
+                fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chartMonths && data.chartReceiptsData) {
+                        months = data.chartMonths;
+                        receipts = data.chartReceiptsData;
+                        initReceiptsChart();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
             });
         }
 
-        const issuesCanvas = document.getElementById('chartIssues');
-        if (issuesCanvas) {
-            const issuesContext = issuesCanvas.getContext('2d');
-            new Chart(issuesContext, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: 'Pengeluaran',
-                        data: issues,
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.08)',
-                        tension: 0.3,
-                        fill: true,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } }
+        // Handle year filter for issues chart
+        const yearFilterIssues = document.getElementById('yearFilterIssues');
+        if (yearFilterIssues) {
+            yearFilterIssues.addEventListener('change', function() {
+                const year = this.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('year_issues', year);
+
+                fetch(url.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
-                }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chartMonths && data.chartIssuesData) {
+                        months = data.chartMonths;
+                        issues = data.chartIssuesData;
+                        initIssuesChart();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
             });
         }
     </script>

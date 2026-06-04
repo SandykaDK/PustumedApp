@@ -335,6 +335,18 @@
     box-shadow: 0 6px 18px rgba(79,70,229,0.08);
 }
 
+/* Page-specific spacing tweaks to avoid early page scrolling */
+.main-wrapper.pemusnahan-page {
+    min-height: auto;
+}
+.pemusnahan-page .container {
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+.pemusnahan-page .card {
+    padding: 18px;
+}
+
 /* Top "+ Ajukan Pemusnahan" button */
 .btn-add {
     background: #10b981;

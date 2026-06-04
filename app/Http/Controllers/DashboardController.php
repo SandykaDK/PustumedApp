@@ -321,37 +321,210 @@ class DashboardController extends Controller
 
     private function buildPetugasAdministrasiDashboard(): array
     {
-        $totalPasien = Pasien::count();
-        $totalDokter = Dokter::count();
-        $totalUser = User::count();
-        $totalJenisObat = JenisObat::count();
-        $totalSatuanObat = SatuanObat::count();
-        $totalNamaObat = NamaObat::count();
-        $totalPenerimaan = PenerimaanObat::count();
-        $totalPengeluaran = PengeluaranObat::count();
+        $today = Carbon::today();
+        $monthStart = $today->copy()->startOfMonth();
+        $monthEnd = $today->copy()->endOfMonth();
+        $next90Days = $today->copy()->addDays(90);
+
+        $totalTransaksiPengeluaranHariIni = PengeluaranObat::whereDate('tanggal_pengeluaran', $today)->count();
+        $totalTransaksiPengeluaranBulanIni = PengeluaranObat::whereBetween('tanggal_pengeluaran', [
+            $monthStart->toDateString(),
+            $monthEnd->toDateString(),
+        ])->count();
+
+        $jumlahObatKeluarHariIni = (int) DetailPengeluaranObat::join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereDate('pengeluaran_obat.tanggal_pengeluaran', $today->toDateString())
+            ->sum('detail_pengeluaran_obat.jumlah_keluar');
+
+        $stockSummary = StokObat::select(
+                'nama_obat_id',
+                DB::raw('SUM(stok) as total_stok'),
+                DB::raw('MIN(tanggal_kadaluwarsa) as nearest_expiry')
+            )
+            ->where('stok', '>', 0)
+            ->groupBy('nama_obat_id')
+            ->get()
+            ->keyBy('nama_obat_id');
+
+        $stockByObat = NamaObat::with('minMax')->orderBy('nama_obat')->get();
+
+        $stockItems = $stockByObat->map(function ($obat) use ($stockSummary, $today, $next90Days) {
+            $summary = $stockSummary->get($obat->id);
+            $stok = (int) ($summary->total_stok ?? 0);
+            $minimumStock = (int) ($obat->minMax?->minimum_stock ?? 0);
+            $nearestExpiry = $summary?->nearest_expiry ? Carbon::parse($summary->nearest_expiry) : null;
+
+            $status = 'Aman';
+            $tone = 'success';
+            $indicator = 'Hijau';
+
+            if ($stok <= 0) {
+                $status = 'Habis';
+                $tone = 'danger';
+                $indicator = 'Merah';
+            } elseif ($minimumStock > 0 && $stok <= $minimumStock) {
+                $status = 'Hampir Habis';
+                $tone = 'warning';
+                $indicator = 'Kuning';
+            }
+
+            return [
+                'nama_obat' => $obat->nama_obat,
+                'stok' => $stok,
+                'minimum_stock' => $minimumStock,
+                'status' => $status,
+                'tone' => $tone,
+                'indicator' => $indicator,
+                'nearest_expiry' => $nearestExpiry?->toDateString(),
+            ];
+        });
+
+        $lowStockItems = $stockItems->whereIn('status', ['Habis', 'Hampir Habis']);
+        $lowStockCount = $lowStockItems->count();
+
+        $expiringSoonItems = StokObat::where('stok', '>', 0)
+            ->whereBetween('tanggal_kadaluwarsa', [
+                $today->toDateString(),
+                $next90Days->toDateString(),
+            ])
+            ->with('namaObat')
+            ->orderBy('tanggal_kadaluwarsa')
+            ->get()
+            ->unique('nama_obat_id')
+            ->values()
+            ->map(function ($item) {
+                return [
+                    'nama_obat' => $item->namaObat?->nama_obat ?? '—',
+                    'tanggal_kadaluwarsa' => $item->tanggal_kadaluwarsa,
+                ];
+            });
+
+        $jumlahObatAkanKadaluarsa = $expiringSoonItems->count();
+        $jumlahPermintaanObatBelumDiproses = $lowStockItems->count();
+
+        $chartMonths = [];
+        $chartUsageData = [];
+        $chartYear = request('chart_year', $today->year);
+        for ($month = 1; $month <= 12; $month++) {
+            $monthDate = Carbon::createFromDate($chartYear, $month, 1);
+            $chartMonths[] = $monthDate->format('M Y');
+            $chartUsageData[] = (int) DetailPengeluaranObat::join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+                ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                    $monthDate->copy()->startOfMonth()->toDateString(),
+                    $monthDate->copy()->endOfMonth()->toDateString(),
+                ])
+                ->sum('detail_pengeluaran_obat.jumlah_keluar');
+        }
+
+        $topIssuedObat = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total_keluar'))
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->groupBy('nama_obat_id')
+            ->orderByDesc('total_keluar')
+            ->with('namaObat')
+            ->limit(10)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'nama_obat' => $item->namaObat?->nama_obat ?? '—',
+                    'jumlah_keluar' => (int) $item->total_keluar,
+                ];
+            });
+
+        $recentIssues = PengeluaranObat::with(['detailPengeluaranObat.namaObat'])
+            ->orderByDesc('tanggal_pengeluaran')
+            ->limit(8)
+            ->get()
+            ->map(function ($issue) {
+                $items = $issue->detailPengeluaranObat
+                    ->map(fn ($detail) => $detail->namaObat?->nama_obat)
+                    ->filter()
+                    ->take(3)
+                    ->implode(', ');
+
+                return [
+                    'tanggal' => $issue->tanggal_pengeluaran ? Carbon::parse($issue->tanggal_pengeluaran)->translatedFormat('d M Y') : '-',
+                    'items' => $items ?: '-',
+                    'jumlah' => (int) $issue->detailPengeluaranObat->sum('jumlah_keluar'),
+                ];
+            });
+
+        $jenisObatKeluarHariIni = DetailPengeluaranObat::join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereDate('pengeluaran_obat.tanggal_pengeluaran', $today->toDateString())
+            ->distinct('detail_pengeluaran_obat.nama_obat_id')
+            ->count('detail_pengeluaran_obat.nama_obat_id');
+
+        $totalItemKeluarHariIni = $jumlahObatKeluarHariIni;
+
+        $topObatHariIni = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total_keluar'))
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereDate('pengeluaran_obat.tanggal_pengeluaran', $today->toDateString())
+            ->groupBy('nama_obat_id')
+            ->orderByDesc('total_keluar')
+            ->with('namaObat')
+            ->first();
+
+        $bottomObatHariIni = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total_keluar'))
+            ->join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+            ->whereDate('pengeluaran_obat.tanggal_pengeluaran', $today->toDateString())
+            ->groupBy('nama_obat_id')
+            ->orderBy('total_keluar')
+            ->with('namaObat')
+            ->first();
+
+        // Query patient visit summary berdasarkan filter bulan/tahun
+        $filterMonth = request('month', $today->month);
+        $filterYear = request('year', $today->year);
+        $filterMonthStart = Carbon::createFromDate($filterYear, $filterMonth, 1)->startOfMonth();
+        $filterMonthEnd = Carbon::createFromDate($filterYear, $filterMonth, 1)->endOfMonth();
+
+        $patientVisitSummary = PengeluaranObat::join('pasien', 'pengeluaran_obat.pasien_id', '=', 'pasien.id')
+            ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                $filterMonthStart->toDateString(),
+                $filterMonthEnd->toDateString(),
+            ])
+            ->select(
+                'pasien.nama as nama_pasien',
+                DB::raw('COUNT(pengeluaran_obat.id) as jumlah_kedatangan')
+            )
+            ->groupBy('pasien.id', 'pasien.nama')
+            ->orderByDesc('jumlah_kedatangan')
+            ->get()
+            ->map(fn($item) => [
+                'nama_pasien' => $item->nama_pasien ?? '-',
+                'jumlah_kedatangan' => $item->jumlah_kedatangan,
+            ])
+            ->toArray();
 
         return [
             'dashboardType' => 'petugas_administrasi',
             'dashboardTitle' => 'Dashboard Petugas Administrasi',
-            'dashboardDescription' => 'Pantau data master, pasien, dokter, dan aktivitas administrasi untuk menjaga alur layanan tetap rapi.',
+            'dashboardDescription' => 'Pantau data pengeluaran obat, permintaan, dan kondisi stok untuk mendukung operasional administrasi.',
             'dashboardAccentClass' => 'administrasi-hero',
             'dashboardBadge' => 'Role: Petugas Administrasi',
             'dashboardStats' => [
-                ['label' => 'Total Pasien', 'value' => number_format($totalPasien), 'icon' => '🧑‍⚕️', 'tone' => 'blue'],
-                ['label' => 'Total Dokter', 'value' => number_format($totalDokter), 'icon' => '👨‍⚕️', 'tone' => 'purple'],
-                ['label' => 'Data Obat', 'value' => number_format($totalNamaObat), 'icon' => '💊', 'tone' => 'green'],
-                ['label' => 'Transaksi Administrasi', 'value' => number_format($totalPenerimaan + $totalPengeluaran), 'icon' => '🧾', 'tone' => 'orange'],
+                ['label' => 'Total Transaksi Pengeluaran Hari Ini', 'value' => number_format($totalTransaksiPengeluaranHariIni), 'icon' => '📅', 'tone' => 'blue'],
+                ['label' => 'Total Transaksi Bulan Ini', 'value' => number_format($totalTransaksiPengeluaranBulanIni), 'icon' => '🗓️', 'tone' => 'purple'],
+                ['label' => 'Obat Stok Menipis', 'value' => number_format($lowStockCount), 'icon' => '⚠️', 'tone' => 'orange'],
+                ['label' => 'Obat Akan Kadaluarsa', 'value' => number_format($jumlahObatAkanKadaluarsa), 'icon' => '⏳', 'tone' => 'red'],
             ],
             'dashboardHighlights' => [
-                ['label' => 'Total User', 'value' => number_format($totalUser), 'description' => 'Jumlah akun aktif yang terdaftar di sistem.'],
-                ['label' => 'Jenis Obat', 'value' => number_format($totalJenisObat), 'description' => 'Master jenis obat yang sudah siap dipakai.'],
-                ['label' => 'Satuan Obat', 'value' => number_format($totalSatuanObat), 'description' => 'Referensi satuan untuk pendataan obat.'],
+                ['label' => 'Total jenis obat keluar', 'value' => number_format($jenisObatKeluarHariIni), 'description' => 'Jenis obat yang tercatat keluar hari ini.'],
+                ['label' => 'Total item keluar', 'value' => number_format($totalItemKeluarHariIni), 'description' => 'Jumlah unit obat yang keluar hari ini.'],
+                ['label' => 'Obat paling banyak keluar', 'value' => $topObatHariIni?->namaObat?->nama_obat ?? '-', 'description' => 'Obat dengan jumlah keluar tertinggi hari ini.'],
+                ['label' => 'Obat paling sedikit keluar', 'value' => $bottomObatHariIni?->namaObat?->nama_obat ?? '-', 'description' => 'Obat dengan jumlah keluar terendah hari ini.'],
             ],
+            'chartMonths' => $chartMonths,
+            'chartUsageData' => $chartUsageData,
+            'patientVisitSummary' => $patientVisitSummary,
+            'topIssuedObat' => $topIssuedObat,
+            'recentIssues' => $recentIssues,
+            'stockAlerts' => $stockItems->sortBy('stok')->take(8)->values(),
+            'expiringSoonItems' => $expiringSoonItems->take(8)->values(),
             'quickActions' => [
                 ['label' => 'Data Pasien', 'url' => route('pasien.index'), 'icon' => '🧑‍⚕️'],
                 ['label' => 'Data Dokter', 'url' => route('dokter.index'), 'icon' => '👨‍⚕️'],
+                ['label' => 'Laporan Permintaan Obat', 'url' => route('permintaan-obat.index'), 'icon' => '📄'],
                 ['label' => 'Data Obat', 'url' => route('nama-obat.index'), 'icon' => '💊'],
-                ['label' => 'Data User', 'url' => route('users.index'), 'icon' => '👥'],
             ],
         ];
     }
@@ -383,22 +556,43 @@ class DashboardController extends Controller
         $pemusnahanPending = PemusnahanObat::where('status', 'pending')->count();
         $pemusnahanApproved = PemusnahanObat::where('status', 'approved')->count();
 
-        // Charts: last 12 months
-        $months = [];
-        $receiptData = [];
-        $issueData = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $m = $now->copy()->subMonths($i);
-            $label = $m->format('M Y');
-            $months[] = $label;
+        // Chart year filters
+        $chartReceiptsYear = (int) request('chart_year_receipts', $now->year);
+        $chartIssuesYear = (int) request('chart_year_issues', $now->year);
+        $chartTopUsedYear = (int) request('chart_year_topused', $now->year);
+        $chartFastSlowYear = (int) request('chart_year_fastslow', $now->year);
+        $chartYearOptions = range($now->year, $now->year - 5);
+
+        $chartReceiptsMonths = [];
+        $chartReceiptsData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $m = Carbon::createFromDate($chartReceiptsYear, $month, 1)->locale('id');
+            $chartReceiptsMonths[] = $m->translatedFormat('M Y');
             $s = $m->copy()->startOfMonth()->toDateString();
             $e = $m->copy()->endOfMonth()->toDateString();
-            $receiptData[] = PenerimaanObat::whereBetween('tanggal_penerimaan', [$s, $e])->count();
-            $issueData[] = PengeluaranObat::whereBetween('tanggal_pengeluaran', [$s, $e])->count();
+            $chartReceiptsData[] = PenerimaanObat::whereBetween('tanggal_penerimaan', [$s, $e])->count();
         }
 
-        // Top 10 used obat (by jumlah_keluar)
+        $chartIssuesMonths = [];
+        $chartIssuesData = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $m = Carbon::createFromDate($chartIssuesYear, $month, 1)->locale('id');
+            $chartIssuesMonths[] = $m->translatedFormat('M Y');
+            $s = $m->copy()->startOfMonth()->toDateString();
+            $e = $m->copy()->endOfMonth()->toDateString();
+            $chartIssuesData[] = PengeluaranObat::whereBetween('tanggal_pengeluaran', [$s, $e])->count();
+        }
+
+        $chartTopUsedStart = Carbon::createFromDate($chartTopUsedYear, 1, 1)->startOfYear()->toDateString();
+        $chartTopUsedEnd = Carbon::createFromDate($chartTopUsedYear, 12, 31)->endOfYear()->toDateString();
+
+        $chartFastSlowStart = Carbon::createFromDate($chartFastSlowYear, 1, 1)->startOfYear()->toDateString();
+        $chartFastSlowEnd = Carbon::createFromDate($chartFastSlowYear, 12, 31)->endOfYear()->toDateString();
+
         $topUsedQuery = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+            ->whereHas('pengeluaranObat', function ($query) use ($chartTopUsedStart, $chartTopUsedEnd) {
+                $query->whereBetween('tanggal_pengeluaran', [$chartTopUsedStart, $chartTopUsedEnd]);
+            })
             ->groupBy('nama_obat_id')
             ->orderByDesc('total')
             ->with('namaObat')
@@ -407,6 +601,34 @@ class DashboardController extends Controller
 
         $topUsedLabels = $topUsedQuery->map(fn($r) => $r->namaObat?->nama_obat ?? '—')->toArray();
         $topUsedData = $topUsedQuery->map(fn($r) => (int)$r->total)->toArray();
+
+        $fastMoving = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+            ->whereHas('pengeluaranObat', function ($query) use ($chartFastSlowStart, $chartFastSlowEnd) {
+                $query->whereBetween('tanggal_pengeluaran', [$chartFastSlowStart, $chartFastSlowEnd]);
+            })
+            ->with('namaObat')
+            ->groupBy('nama_obat_id')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $slowMoving = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+            ->whereHas('pengeluaranObat', function ($query) use ($chartFastSlowStart, $chartFastSlowEnd) {
+                $query->whereBetween('tanggal_pengeluaran', [$chartFastSlowStart, $chartFastSlowEnd]);
+            })
+            ->with('namaObat')
+            ->groupBy('nama_obat_id')
+            ->orderBy('total')
+            ->limit(5)
+            ->get();
+
+        // Top 10 used obat (by jumlah_keluar)
+        $topUsedQuery = DetailPengeluaranObat::select('nama_obat_id', DB::raw('SUM(jumlah_keluar) as total'))
+            ->groupBy('nama_obat_id')
+            ->orderByDesc('total')
+            ->with('namaObat')
+            ->limit(10)
+            ->get();
 
         // Notifications
         $lowStock = DB::table('min_max')->join('nama_obat', 'min_max.nama_obat_id', '=', 'nama_obat.id')
@@ -505,11 +727,19 @@ class DashboardController extends Controller
             'expiredCount' => $expiredCount,
             'transactionsThisMonth' => $transactionsThisMonth,
             'destructionsThisMonth' => $destructionsThisMonth,
-            'chartMonths' => $months,
-            'chartReceiptsData' => $receiptData,
-            'chartIssuesData' => $issueData,
+            'chartReceiptsYear' => $chartReceiptsYear,
+            'chartIssuesYear' => $chartIssuesYear,
+            'chartTopUsedYear' => $chartTopUsedYear,
+            'chartFastSlowYear' => $chartFastSlowYear,
+            'chartYearOptions' => $chartYearOptions,
+            'chartReceiptsMonths' => $chartReceiptsMonths,
+            'chartIssuesMonths' => $chartIssuesMonths,
+            'chartReceiptsData' => $chartReceiptsData,
+            'chartIssuesData' => $chartIssuesData,
             'topUsedLabels' => $topUsedLabels,
             'topUsedData' => $topUsedData,
+            'fastMoving' => $fastMoving,
+            'slowMoving' => $slowMoving,
             'notifications' => $notifications,
             'permintaanPending' => $permintaanPending,
             'recentReceipts' => $recentReceipts,

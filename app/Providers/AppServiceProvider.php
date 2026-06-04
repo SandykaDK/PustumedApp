@@ -31,14 +31,24 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('components.sidebar', function ($view) {
             $pendingPemusnahanCount = 0;
+            $approvedPemusnahanCount = 0;
 
-            if (Auth::check() && Auth::user()?->role === 'kepala_pustu') {
-                $pendingPemusnahanCount = DB::table('pemusnahan_obat')
-                    ->whereRaw('status = ?', ['pending'])
-                    ->count();
+            if (Auth::check()) {
+                if (Auth::user()?->role === 'kepala_pustu') {
+                    $pendingPemusnahanCount = DB::table('pemusnahan_obat')
+                        ->where('status', 'pending')
+                        ->count();
+                }
+
+                if (Auth::user()?->role === 'petugas_obat') {
+                    $approvedPemusnahanCount = DB::table('pemusnahan_obat')
+                        ->where('status', 'approved')
+                        ->count();
+                }
             }
 
-            $view->with('sidebarPendingPemusnahanCount', $pendingPemusnahanCount);
+            $view->with('sidebarPendingPemusnahanCount', $pendingPemusnahanCount)
+                 ->with('sidebarApprovedPemusnahanCount', $approvedPemusnahanCount);
         });
     }
 }

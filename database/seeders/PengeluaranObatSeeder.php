@@ -35,13 +35,13 @@ class PengeluaranObatSeeder extends Seeder
             $stokByBatch = StokObat::whereIn('no_batch', $batchNos)->get()->keyBy('no_batch');
 
             $userIds = [1, 2, 3, 4];
-            $pasienIds = [1, 2, 3];
+            $pasienIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
             $dokterIds = [1, 2, 3];
             $lokasiPenyimpanan = ['Rak A1', 'Rak A2', 'Rak A3', 'Rak A4', 'Rak B1', 'Rak B2', 'Rak B3', 'Rak B4', 'Rak C1', 'Rak C2', 'Rak C3', 'Rak C4', 'Rak D1', 'Rak D2', 'Rak D3'];
 
             $pengeluaranData = [];
 
-            for ($i = 0; $i < 48; $i++) {
+            for ($i = 0; $i < 56; $i++) {
                 $batchNo = $batchNos[$i % count($batchNos)];
                 $stok = $stokByBatch[$batchNo];
 

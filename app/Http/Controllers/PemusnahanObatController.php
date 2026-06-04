@@ -121,17 +121,17 @@ class PemusnahanObatController extends Controller
                     ->select('pemusnahan_obat.*');
             } elseif ($sort_by === 'tanggal_kadaluwarsa') {
                 $pendingQuery->join('detail_pemusnahan_obat', 'pemusnahan_obat.id', '=', 'detail_pemusnahan_obat.pemusnahan_obat_id')
-                    ->join('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
+                    ->leftJoin('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
                     ->orderBy('stok_obat.tanggal_kadaluwarsa', $direction)
                     ->select('pemusnahan_obat.*');
 
                 $approvedQuery->join('detail_pemusnahan_obat', 'pemusnahan_obat.id', '=', 'detail_pemusnahan_obat.pemusnahan_obat_id')
-                    ->join('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
+                    ->leftJoin('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
                     ->orderBy('stok_obat.tanggal_kadaluwarsa', $direction)
                     ->select('pemusnahan_obat.*');
 
                 $dimusnahkanQuery->join('detail_pemusnahan_obat', 'pemusnahan_obat.id', '=', 'detail_pemusnahan_obat.pemusnahan_obat_id')
-                    ->join('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
+                    ->leftJoin('stok_obat', 'detail_pemusnahan_obat.stok_obat_id', '=', 'stok_obat.id')
                     ->orderBy('stok_obat.tanggal_kadaluwarsa', $direction)
                     ->select('pemusnahan_obat.*');
             } elseif ($sort_by === 'jumlah') {
@@ -240,7 +240,7 @@ class PemusnahanObatController extends Controller
             ]);
         }
 
-        return redirect()->route('pemusnahan-obat.index')->with('success', 'Request pemusnahan berhasil diajukan.');
+        return redirect()->route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan'])->with('success', 'Request pemusnahan berhasil diajukan.');
     }
 
     /**

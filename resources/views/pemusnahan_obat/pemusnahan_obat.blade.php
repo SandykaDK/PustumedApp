@@ -19,7 +19,7 @@
     <x-sidebar />
     <x-navbar />
 
-    <div class="main-wrapper">
+    <div class="main-wrapper pemusnahan-page">
         <div class="container main-content">
             <div class="page-header">
                 <h1>Pemusnahan Obat - Mendekati Kadaluwarsa (&lt; 30 hari)</h1>
@@ -316,13 +316,11 @@
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322C3.2 7.036 7.522 4 12 4c4.478 0 8.8 3.036 9.964 8.322a1.125 1.125 0 0 1 0 .356C20.8 16.964 16.478 20 12 20c-4.478 0-8.8-3.036-9.964-8.322a1.125 1.125 0 0 1 0-.356z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
                                                 </button>
                                                 @if(auth()->id() === $req->user_id)
-                                                    <x-confirm-delete :action="url('/pemusnahan-obat/'.$req->id.'/cancel')" title="Konfirmasi Pembatalan" message="Yakin ingin membatalkan pengajuan ini?" confirmLabel="Batal" method="POST">
-                                                        <button type="button" class="action-btn delete" title="Batal Pengajuan">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                                            </svg>
-                                                        </button>
-                                                    </x-confirm-delete>
+                                                    <button type="button" class="action-btn delete btn-cancel-pengajuan" data-id="{{ $req->id }}" data-name="{{ $detail->namaObat?->nama_obat ?? '-' }}" data-batch="{{ $detail->stok?->no_batch ?? '' }}" title="Batal Pengajuan">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
                                                 @endif
                                             </div>
                                         </td>
@@ -609,11 +607,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322C3.2 7.036 7.522 4 12 4c4.478 0 8.8 3.036 9.964 8.322a1.125 1.125 0 0 1 0 .356C20.8 16.964 16.478 20 12 20c-4.478 0-8.8-3.036-9.964-8.322a1.125 1.125 0 0 1 0-.356z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
                                             </button>
                                             @if(auth()->user()?->role === 'kepala_pustu')
-                                                <x-confirm-approve :action="url('/pemusnahan-obat/'.$req->id.'/approve')" title="Konfirmasi Persetujuan" message="Anda akan menyetujui permintaan ini. Lanjutkan?" confirmLabel="Setujui" method="POST">
-                                                    <button type="button" class="action-btn approve" title="Setujui">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                                                    </button>
-                                                </x-confirm-approve>
+                                                <button type="button" class="action-btn approve" data-approve-action="{{ url('/pemusnahan-obat/'.$req->id.'/approve') }}" data-approve-name="{{ e($displayNames) }}" title="Setujui">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                                </button>
                                             @endif
                                         </div>
                                     </td>
@@ -817,6 +813,61 @@
     </div>
 </div>
 
+<!-- Cancel Pemusnahan Modal -->
+<div id="cancelPemusnahanModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h2>Batalkan Pengajuan</h2>
+        </div>
+        <div class="modal-body">
+            <p id="cancelPemusnahanMessage" style="margin:0; color:#374151; line-height:1.6;"></p>
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
+            <button type="button" id="cancelCancelPemusnahan" class="btn-secondary">Tidak</button>
+            <form id="cancelPemusnahanForm" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" class="btn-danger">Batalkan Pengajuan</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Pemusnahan Modal -->
+<div id="approvePemusnahanModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="approvePemusnahanTitle">
+        <div class="modal-header">
+            <h2 id="approvePemusnahanTitle">Setujui Permintaan</h2>
+            <button type="button" id="closeApprovePemusnahanModal" class="modal-close" aria-label="Tutup">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="approvePemusnahanMessage" style="margin:0; color:#374151; line-height:1.6;"></p>
+        </div>
+        <div class="modal-actions" style="margin-top:18px; justify-content:flex-end;">
+            <button type="button" id="cancelApprovePemusnahan" class="btn-secondary">Batal</button>
+            <form id="approvePemusnahanForm" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" class="btn-primary">Setujui</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Page Alert Modal -->
+<div id="pageAlertModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="pageAlertTitle">
+        <div class="modal-header">
+            <h2 id="pageAlertTitle">Perhatian</h2>
+            <button type="button" id="closePageAlertModal" class="modal-close" aria-label="Tutup">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="pageAlertMessage" style="margin:0; color:#374151; line-height:1.6;"></p>
+        </div>
+        <div class="modal-actions" style="margin-top:18px; justify-content:flex-end;">
+            <button type="button" id="pageAlertOkButton" class="btn-primary">OK</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // data for selects
     // include data attributes so we can read lokasi and satuan directly from the option
@@ -843,6 +894,23 @@
     const closeProcessBtn = document.getElementById('closeProcessPemusnahanModal');
     const cancelProcessBtn = document.getElementById('cancelProcessPemusnahan');
     const processForm = document.getElementById('processPemusnahanForm');
+
+    const cancelModal = document.getElementById('cancelPemusnahanModal');
+    const closeCancelModalBtn = document.getElementById('closeCancelPemusnahanModal');
+    const cancelCancelBtn = document.getElementById('cancelCancelPemusnahan');
+    const cancelPemusnahanForm = document.getElementById('cancelPemusnahanForm');
+    const cancelPemusnahanMessage = document.getElementById('cancelPemusnahanMessage');
+
+    const approveModal = document.getElementById('approvePemusnahanModal');
+    const closeApproveModalBtn = document.getElementById('closeApprovePemusnahanModal');
+    const cancelApproveModalBtn = document.getElementById('cancelApprovePemusnahan');
+    const approvePemusnahanForm = document.getElementById('approvePemusnahanForm');
+    const approvePemusnahanMessage = document.getElementById('approvePemusnahanMessage');
+
+    const pageAlertModal = document.getElementById('pageAlertModal');
+    const closePageAlertModalBtn = document.getElementById('closePageAlertModal');
+    const pageAlertOkButton = document.getElementById('pageAlertOkButton');
+    const pageAlertMessage = document.getElementById('pageAlertMessage');
 
     let pemusnahanIndex = 0;
 
@@ -923,6 +991,85 @@
         }
     }
 
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function openCancelPemusnahanModal(id, namaObat, noBatch) {
+        if (!cancelModal || !cancelPemusnahanForm || !cancelPemusnahanMessage) return;
+        cancelPemusnahanForm.action = `/pemusnahan-obat/${id}/cancel`;
+        cancelPemusnahanMessage.innerHTML = `Apakah anda yakin ingin membatalkan pengajuan pemusnahan obat <strong>${escapeHtml(namaObat)}</strong>${noBatch ? ` (Batch ${escapeHtml(noBatch)})` : ''}?`;
+        cancelModal.classList.remove('hidden');
+        cancelModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCancelPemusnahanModal() {
+        if (!cancelModal) return;
+        cancelModal.classList.add('hidden');
+        cancelModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+        if (cancelPemusnahanForm) {
+            cancelPemusnahanForm.action = '';
+        }
+    }
+
+    function openApprovePemusnahanModal(action, namaObat) {
+        if (!approveModal || !approvePemusnahanForm || !approvePemusnahanMessage) return;
+        approvePemusnahanForm.action = action;
+        approvePemusnahanMessage.innerHTML = `Apakah Anda yakin ingin menyetujui permintaan pemusnahan obat <strong>${escapeHtml(namaObat || 'ini')}</strong>?`;
+        approveModal.classList.remove('hidden');
+        approveModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeApprovePemusnahanModal() {
+        if (!approveModal) return;
+        approveModal.classList.add('hidden');
+        approveModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+        if (approvePemusnahanForm) {
+            approvePemusnahanForm.action = '';
+        }
+    }
+
+    function showPageAlert(message) {
+        if (!pageAlertModal || !pageAlertMessage) return;
+        pageAlertMessage.textContent = message;
+        pageAlertModal.classList.remove('hidden');
+        pageAlertModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePageAlertModal() {
+        if (!pageAlertModal) return;
+        pageAlertModal.classList.add('hidden');
+        pageAlertModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+    }
+
+    function onOpenApproveModal(e) {
+        const btn = e.currentTarget;
+        const action = btn.dataset.approveAction;
+        const namaObat = btn.dataset.approveName || 'permintaan ini';
+        if (!action) return;
+        openApprovePemusnahanModal(action, namaObat);
+    }
+
+    function onOpenCancelModal(e) {
+        const btn = e.currentTarget;
+        const id = btn.dataset.id;
+        const namaObat = btn.dataset.name || 'pengajuan';
+        const noBatch = btn.dataset.batch || '';
+        if (!id) return;
+        openCancelPemusnahanModal(id, namaObat, noBatch);
+    }
+
     function onProcessPemusnahan(e) {
         const btn = e.currentTarget;
         const id = btn.dataset.id;
@@ -934,6 +1081,12 @@
 
     if (closeProcessBtn) closeProcessBtn.addEventListener('click', closeProcessPemusnahan);
     if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', closeProcessPemusnahan);
+    if (closeCancelModalBtn) closeCancelModalBtn.addEventListener('click', closeCancelPemusnahanModal);
+    if (cancelCancelBtn) cancelCancelBtn.addEventListener('click', closeCancelPemusnahanModal);
+    if (closeApproveModalBtn) closeApproveModalBtn.addEventListener('click', closeApprovePemusnahanModal);
+    if (cancelApproveModalBtn) cancelApproveModalBtn.addEventListener('click', closeApprovePemusnahanModal);
+    if (closePageAlertModalBtn) closePageAlertModalBtn.addEventListener('click', closePageAlertModal);
+    if (pageAlertOkButton) pageAlertOkButton.addEventListener('click', closePageAlertModal);
 
     if (openCreateBtn) openCreateBtn.addEventListener('click', () => {
         // ensure add-detail is available for manual create
@@ -1157,6 +1310,14 @@
             btn.removeEventListener('click', onApplyPemusnahan);
             btn.addEventListener('click', onApplyPemusnahan);
         });
+        document.querySelectorAll('.btn-cancel-pengajuan').forEach(btn => {
+            btn.removeEventListener('click', onOpenCancelModal);
+            btn.addEventListener('click', onOpenCancelModal);
+        });
+        document.querySelectorAll('.approve').forEach(btn => {
+            btn.removeEventListener('click', onOpenApproveModal);
+            btn.addEventListener('click', onOpenApproveModal);
+        });
         // initialize confirm-delete and confirm-approve components in dynamically-injected templates
         document.querySelectorAll('.confirm-delete-component, .confirm-approve-component').forEach(comp => {
             if (comp.dataset.caInit) return; // already initialized
@@ -1257,7 +1418,7 @@
             const rows = Array.from(this.querySelectorAll('tbody tr'));
             if (rows.length === 0) {
                 e.preventDefault();
-                alert('Tambahkan minimal 1 item untuk diajukan.');
+                showPageAlert('Tambahkan minimal 1 item untuk diajukan.');
                 return;
             }
             // ensure fields filled
@@ -1266,7 +1427,7 @@
                 const jumlah = r.querySelector('[name$="[jumlah]"]');
                 if (!nama || !nama.value || !jumlah || !jumlah.value) {
                     e.preventDefault();
-                    alert('Lengkapi semua detail item sebelum mengajukan.');
+                    showPageAlert('Lengkapi semua detail item sebelum mengajukan.');
                     return;
                 }
             }

@@ -402,8 +402,10 @@ body.sidebar-collapsed .main-content {
 }
 
 .sidebar-submenu a {
-    display: block;
-    padding: 10px 0;
+    display: flex;
+    align-items: center;
+    padding: 10px 0 10px 0;
+    padding-right: 20px;
     font-size: 13px;
     color: #777;
     text-decoration: none;
@@ -412,7 +414,6 @@ body.sidebar-collapsed .main-content {
 .sidebar-submenu a.sidebar-link-with-badge {
     display: flex;
     align-items: center;
-    gap: 10px;
 }
 
 .sidebar-submenu a.sidebar-link-with-badge .heroicon-sidebar {
@@ -420,17 +421,17 @@ body.sidebar-collapsed .main-content {
 }
 
 .sidebar-submenu a.sidebar-link-with-badge .sidebar-badge {
-    margin-left: 6px;
+    margin-left: auto;
     min-width: 18px;
     height: 18px;
     padding: 0 6px;
     border-radius: 999px;
-    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-    border: 1px solid rgba(255, 255, 255, 0.65);
-    color: #fff;
+    background: #ef4444;
+    border: none;
+    color: #ffffff;
     font-size: 10px;
     font-weight: 700;
-    line-height: 16px;
+    line-height: 18px;
     text-align: center;
     display: inline-flex;
     align-items: center;
