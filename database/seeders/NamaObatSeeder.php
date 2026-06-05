@@ -363,7 +363,7 @@ class NamaObatSeeder extends Seeder
             ],
             [
                 'kode_obat' => 'MED-040',
-                'nama_obat' => 'Ibuproden tablet 200mg / 400 mg',
+                'nama_obat' => 'Ibuprofen tablet 200mg / 400 mg',
                 'jenis_obat_id' => '1',
                 'satuan_obat_id' => '2',
                 'lokasi_penyimpanan' => 'Rak A1',
