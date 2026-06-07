@@ -17,8 +17,9 @@ class DatabaseSeeder extends Seeder
             NamaObatSeeder::class,
             // PenerimaanObatSeeder::class,
             // PengeluaranObatSeeder::class,
-            PenerimaanObatSeeder2::class,
-            PengeluaranObatSeeder2::class,
+            // PenerimaanObatSeeder2::class,
+            // PengeluaranObatSeeder2::class,
+            // MinMaxSeeder::class,
         ]);
     }
 }

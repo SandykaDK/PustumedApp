@@ -134,7 +134,7 @@
 
 .expanded-detail-table th:nth-child(1),
 .expanded-detail-table td:nth-child(1) {
-    width: 20%;
+    width: 30%;
 }
 
 .expanded-detail-table th:nth-child(2),
@@ -159,7 +159,7 @@
 
 .expanded-detail-table th:nth-child(6),
 .expanded-detail-table td:nth-child(6) {
-    width: 26%;
+    width: 16%;
 }
 
 .detail-empty-state {

@@ -60,7 +60,6 @@
                         <tr>
                             <th>Nama Obat</th>
                             <th>Stok</th>
-                            <th>Min Stock</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -74,7 +73,6 @@
                             <tr data-status="{{ $item['status_key'] ?? 'aman' }}">
                                 <td>{{ $item['nama_obat'] ?? '-' }}</td>
                                 <td>{{ number_format($item['stok'] ?? 0) }}</td>
-                                <td>{{ isset($item['minimum_stock']) && $item['minimum_stock'] !== null ? number_format($item['minimum_stock']) : '-' }}</td>
                                 <td>
                                     <span class="priority-status {{ $item['tone'] ?? 'success' }}">
                                         {{ $item['status_label'] ?? $item['status'] ?? 'Aman' }}
@@ -83,11 +81,11 @@
                             </tr>
                         @empty
                             <tr class="priority-empty-row">
-                                <td colspan="4" class="empty">Tidak ada obat yang masuk prioritas saat ini.</td>
+                                <td colspan="3" class="empty">Tidak ada obat yang masuk prioritas saat ini.</td>
                             </tr>
                         @endforelse
                         <tr class="priority-no-results" style="display:none;">
-                            <td colspan="4" class="empty">Tidak ada data yang cocok dengan filter status.</td>
+                            <td colspan="3" class="empty">Tidak ada data yang cocok dengan filter status.</td>
                         </tr>
                     </tbody>
                 </table>

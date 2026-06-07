@@ -8,6 +8,7 @@ use App\Models\PenerimaanObat;
 use App\Models\SatuanObat;
 use App\Models\StokObat;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
