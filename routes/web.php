@@ -127,6 +127,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/nama-obat', [NamaObatController::class, 'store'])
         ->name('nama-obat.store');
 
+    // AJAX: generate kode by jenis
+    Route::get('/nama-obat/generate-kode/{jenisId}', [NamaObatController::class, 'generateKode'])
+        ->name('nama-obat.generate-kode');
+
     Route::get('/nama-obat/{nama_obat}/edit', [NamaObatController::class, 'edit'])
         ->name('nama-obat.edit');
 
@@ -255,6 +259,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/pemusnahan-obat/{id}/approve', [PemusnahanObatController::class, 'approve'])
         ->name('pemusnahan-obat.approve');
+
+    Route::post('/pemusnahan-obat/{id}/reject', [PemusnahanObatController::class, 'reject'])
+        ->name('pemusnahan-obat.reject');
 
     Route::post('/pemusnahan-obat/{id}/dimusnahkan', [PemusnahanObatController::class, 'dimusnahkan'])
         ->name('pemusnahan-obat.dimusnahkan');

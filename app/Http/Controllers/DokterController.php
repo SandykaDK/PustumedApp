@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dokter;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -53,23 +54,42 @@ class DokterController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama'         => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'nama'         => 'required|string|max:255|unique:dokter,nama',
             'alamat'       => 'required|string|max:255',
             'jenis_kelamin'=> 'required|in:L,P',
-            'no_telepon'   => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email',
+            'no_telepon'   => 'required|string|max:255|unique:dokter,no_telepon',
+            'email'        => 'required|email|unique:dokter,email',
             'status'       => 'required|in:aktif,nonaktif',
+        ], [
+            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
         ]);
 
-        Dokter::create([
-            'nama'         => $request->nama,
-            'alamat'       => $request->alamat,
-            'jenis_kelamin'=> $request->jenis_kelamin,
-            'no_telepon'   => $request->no_telepon,
-            'email'        => $request->email,
-            'status'       => $request->status,
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('dokter.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            Dokter::create([
+                'nama'         => $request->nama,
+                'alamat'       => $request->alamat,
+                'jenis_kelamin'=> $request->jenis_kelamin,
+                'no_telepon'   => $request->no_telepon,
+                'email'        => $request->email,
+                'status'       => $request->status,
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('dokter.index')
+                    ->withErrors(['email' => 'Data dokter sudah ada.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('dokter.index')
@@ -84,12 +104,16 @@ class DokterController extends Controller
     public function update(Request $request, Dokter $dokter)
     {
         $validator = Validator::make($request->all(), [
-            'nama'         => 'required|string|max:255',
+            'nama'         => 'required|string|max:255|unique:dokter,nama,' . $dokter->id,
             'alamat'       => 'required|string|max:255',
             'jenis_kelamin'=> 'required|in:L,P',
-            'no_telepon'   => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email,',
+            'no_telepon'   => 'required|string|max:255|unique:dokter,no_telepon,' . $dokter->id,
+            'email'        => 'required|email|unique:dokter,email,' . $dokter->id,
             'status'       => 'required|in:aktif,nonaktif',
+        ], [
+            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
         ]);
 
         if ($validator->fails()) {
@@ -99,14 +123,24 @@ class DokterController extends Controller
                 ->with('edit_dokter_id', $dokter->id);
         }
 
-        $dokter->update($request->only([
-            'nama',
-            'alamat',
-            'jenis_kelamin',
-            'no_telepon',
-            'email',
-            'status',
-        ]));
+        try {
+            $dokter->update($request->only([
+                'nama',
+                'alamat',
+                'jenis_kelamin',
+                'no_telepon',
+                'email',
+                'status',
+            ]));
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('dokter.index')
+                    ->withErrors(['email' => 'Data dokter sudah ada.'])
+                    ->withInput()
+                    ->with('edit_dokter_id', $dokter->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('dokter.index')

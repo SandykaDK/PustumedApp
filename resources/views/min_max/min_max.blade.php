@@ -53,12 +53,6 @@
                                 </select>
                             </div>
 
-                            <button type="submit" class="btn-filter">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                                </svg>
-                                <span>Cari</span>
-                            </button>
                             <a href="{{ route('min-max.index') }}" class="btn-filter btn-reset">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
@@ -78,9 +72,9 @@
                                 <th>Nama Obat</th>
                                 <th>Satuan</th>
                                 <th>Stok</th>
-                                <th>Avg</th>
-                                <th>Max Daily</th>
-                                <th>Safety Stock</th>
+                                <th>R</th>
+                                <th>Rmax</th>
+                                <th>Safety Stock (SS)</th>
                                 <th>Min</th>
                                 <th>Max</th>
                                 <th>ROP</th>
@@ -136,5 +130,45 @@
             </div>
         </div>
     </div>
-</body>
-</html>
+    <script>
+        (function() {
+            const filterForm = document.querySelector('form.filter-form');
+            if (!filterForm) return;
+
+            const searchInput = filterForm.querySelector('input[name="search"]');
+            const monthInput = filterForm.querySelector('input[name="month_year"]');
+            const statusInput = filterForm.querySelector('select[name="status"]');
+            let debounceTimer;
+
+            function submitFilter(delay = 300) {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(function() {
+                    filterForm.submit();
+                }, delay);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    submitFilter(400);
+                });
+                searchInput.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        submitFilter(0);
+                    }
+                });
+            }
+
+            if (monthInput) {
+                monthInput.addEventListener('change', function() {
+                    submitFilter(0);
+                });
+            }
+
+            if (statusInput) {
+                statusInput.addEventListener('change', function() {
+                    submitFilter(0);
+                });
+            }
+        })();
+    </script>

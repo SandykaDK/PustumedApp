@@ -82,6 +82,14 @@
                                     </a>
                                 </th>
                                 <th>
+                                    <a href="{{ route('laporan-pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'stok', 'direction' => $sort_by === 'stok' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
+                                        Jumlah Obat
+                                        @if($sort_by === 'stok')
+                                            @if($direction === 'asc') ↑ @else ↓ @endif
+                                        @endif
+                                    </a>
+                                </th>
+                                <th>
                                     <a href="{{ route('laporan-pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'tanggal_pemusnahan', 'direction' => $sort_by === 'tanggal_pemusnahan' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
                                         Tanggal Pemusnahan
                                         @if($sort_by === 'tanggal_pemusnahan')
@@ -107,6 +115,7 @@
                                             N/A
                                         @endif
                                     </td>
+                                    <td>{{ $pemusnahan['jumlah'] ?? 0 }}</td>
                                     <td>
                                         @if(!empty($pemusnahan['tanggal_pemusnahan']))
                                             {{ \Carbon\Carbon::parse($pemusnahan['tanggal_pemusnahan'])->locale('id')->translatedFormat('d F Y') }}
@@ -127,7 +136,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="empty">Tidak ada data pemusnahan obat.</td>
+                                    <td colspan="9" class="empty">Tidak ada data pemusnahan obat.</td>
                                 </tr>
                             @endforelse
                         </tbody>

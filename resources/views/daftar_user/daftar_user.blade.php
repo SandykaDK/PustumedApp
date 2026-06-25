@@ -411,6 +411,8 @@
             const closeBtn = document.getElementById('closeCreateModal');
             const cancelBtn = document.getElementById('cancelCreateModal');
 
+            const createForm = document.querySelector('#createUserModal form');
+
             function openModal() {
                 if (!modal) return;
                 modal.classList.remove('hidden');
@@ -418,8 +420,36 @@
                 document.body.style.overflow = 'hidden';
             }
 
+            function clearCreateForm() {
+                if (!createForm) return;
+                createForm.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]').forEach(input => {
+                    input.value = '';
+                });
+
+                const statusToggle = createForm.querySelector('#status_toggle');
+                const statusHidden = createForm.querySelector('#status_hidden');
+                const statusText = statusToggle && statusToggle.nextElementSibling.nextElementSibling;
+                if (statusToggle && statusHidden) {
+                    statusToggle.checked = true;
+                    statusHidden.value = 'aktif';
+                    if (statusText) {
+                        statusText.textContent = 'Aktif';
+                    }
+                }
+            }
+
+            function removeErrorList(targetModal) {
+                if (!targetModal) return;
+                const errorList = targetModal.querySelector('.error-list');
+                if (errorList) {
+                    errorList.remove();
+                }
+            }
+
             function closeModal() {
                 if (!modal) return;
+                removeErrorList(modal);
+                clearCreateForm();
                 modal.classList.add('hidden');
                 modal.setAttribute('aria-hidden', 'true');
                 document.body.style.overflow = 'auto';
@@ -428,10 +458,6 @@
             openBtn && openBtn.addEventListener('click', openModal);
             closeBtn && closeBtn.addEventListener('click', closeModal);
             cancelBtn && cancelBtn.addEventListener('click', closeModal);
-
-            modal && modal.addEventListener('click', function(e) {
-                if (e.target === modal) closeModal();
-            });
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') closeModal();
@@ -456,8 +482,17 @@
                 document.body.style.overflow = 'hidden';
             }
 
+            function removeErrorList(targetModal) {
+                if (!targetModal) return;
+                const errorList = targetModal.querySelector('.error-list');
+                if (errorList) {
+                    errorList.remove();
+                }
+            }
+
             function closeEditModal() {
                 if (!editModal) return;
+                removeErrorList(editModal);
                 editModal.classList.add('hidden');
                 editModal.setAttribute('aria-hidden', 'true');
                 document.body.style.overflow = 'auto';
@@ -501,10 +536,6 @@
 
             closeEditBtn && closeEditBtn.addEventListener('click', closeEditModal);
             cancelEditBtn && cancelEditBtn.addEventListener('click', closeEditModal);
-
-            editModal && editModal.addEventListener('click', function(e) {
-                if (e.target === editModal) closeEditModal();
-            });
 
             const editUserIdFromServer = @json(session('edit_user_id'));
             const oldInput = @json(session()->getOldInput());

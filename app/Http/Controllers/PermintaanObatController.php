@@ -9,6 +9,7 @@ use App\Models\DetailPemusnahanObat;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class PermintaanObatController extends Controller
@@ -108,6 +109,25 @@ class PermintaanObatController extends Controller
         }
 
         $search = $request->get('search', '');
+
+        // Compute available opening stock as of the start of the selected month.
+        // We consider batches received on-or-before month start, still having stok>0
+        // and with expiry more than 30 days after the month start.
+        $thresholdStartDate = $monthStart->copy()->addDays(30)->toDateString();
+        $availableStocksAtStart = DB::table('stok_obat')
+            ->select('nama_obat_id', DB::raw('SUM(stok) as available_stok'))
+            ->where('stok', '>', 0)
+            ->where('tanggal_kadaluwarsa', '>', $thresholdStartDate)
+            ->where(function ($q) use ($monthStart) {
+                // prefer explicit penerimaan date column if available, otherwise fall back to created_at
+                if (Schema::hasColumn('stok_obat', 'tanggal_penerimaan')) {
+                    $q->where('tanggal_penerimaan', '<=', $monthStart->toDateString());
+                } else {
+                    $q->where('created_at', '<=', $monthStart->endOfDay());
+                }
+            })
+            ->groupBy('nama_obat_id')
+            ->pluck('available_stok', 'nama_obat_id');
 
         $startDate = $monthEnd->copy()->subDays($period - 1)->startOfDay();
 
@@ -223,12 +243,22 @@ class PermintaanObatController extends Controller
             'satuanObat',
         ])->orderBy('nama_obat')->get();
 
-        $items = $namaObats->map(function ($obat) use ($periodAverages, $monthlyIncoming, $monthlyUsage, $incomingBeforeMonth, $usageBeforeMonth, $pemusnahanMonthly, $pemusnahanBeforeMonth, $previousMonthIncoming, $leadTime, $bufferDays) {
+        $items = $namaObats->map(function ($obat) use ($periodAverages, $monthlyIncoming, $monthlyUsage, $incomingBeforeMonth, $usageBeforeMonth, $pemusnahanMonthly, $pemusnahanBeforeMonth, $previousMonthIncoming, $leadTime, $bufferDays, $availableStocksAtStart, $monthStart) {
             $incomingBefore = (int) ($incomingBeforeMonth->get($obat->id)->total_masuk ?? 0);
             $usageBefore = (int) ($usageBeforeMonth->get($obat->id)->total_keluar ?? 0);
             $pemusnahanBefore = (int) ($pemusnahanBeforeMonth->get($obat->id)->total_dimusnahkan ?? 0);
 
-            $stokAwal = max(0, $incomingBefore - $usageBefore - $pemusnahanBefore);
+            // Determine opening stock (stok_awal).
+            // Prefer available batches as of month start (expiry > monthStart + 30 days).
+            $openingAvailable = $availableStocksAtStart->has($obat->id)
+                ? (int) $availableStocksAtStart->get($obat->id)
+                : null;
+            if (!is_null($openingAvailable)) {
+                $stokAwal = max(0, $openingAvailable);
+            } else {
+                // Fallback to historical balance calculation if no batch-level data
+                $stokAwal = max(0, $incomingBefore - $usageBefore - $pemusnahanBefore);
+            }
             // Kolom "Pemberian" menampilkan total stok masuk pada periode yang dipilih.
             // Nilai ini dipakai untuk menghitung "Persediaan" = stok awal + pemberian.
             $pemberian = (int) ($monthlyIncoming->get($obat->id)->total_masuk ?? 0);
@@ -236,7 +266,9 @@ class PermintaanObatController extends Controller
             $persediaan = $stokAwal + $pemberian;
             $pemakaian = (int) ($monthlyUsage->get($obat->id)->total_keluar ?? 0);
             $pemusnahan = (int) ($pemusnahanMonthly->get($obat->id)->total_dimusnahkan ?? 0);
-            $sisaStok = max(0, $persediaan - $pemakaian - $pemusnahan);
+            // Use transaction-based closing stock for the selected month snapshot.
+            // This avoids leaking current batch balances into past month reports.
+            $sisaStok = max(0, $stokAwal + $pemberian - $pemakaian - $pemusnahan);
 
             $minMax = $obat->minMaxRecords->first();
 
@@ -253,7 +285,7 @@ class PermintaanObatController extends Controller
                 $periodAverage = round($averageDailyUsage, 2);
             }
 
-            if ($sisaStok <= $minimumStock) {
+                if ($sisaStok <= $minimumStock) {
                 $status = 'butuh-restock';
                 $statusLabel = 'Butuh Restock';
             } elseif ($sisaStok <= max($minimumStock, intval($minimumStock + max(1, ($maximumStock - $minimumStock) * 0.25)))) {

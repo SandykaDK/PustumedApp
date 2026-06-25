@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -55,24 +56,43 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name'                  => 'required|string|max:255',
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'name'                  => 'required|string|max:255|unique:users,name',
             'email'                 => 'required|email|unique:users,email',
-            'no_telepon'            => 'nullable|string|max:20',
+            'no_telepon'            => 'required|string|max:20|unique:users,no_telepon',
             'role'                  => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu,super_admin',
             'status'                => 'required|in:aktif,nonaktif',
             'password'              => 'required|min:6|confirmed',
             'password_confirmation' => 'required_with:password|same:password',
+        ], [
+            'name.unique' => 'Nama pengguna "' . $request->name . '" sudah digunakan.',
+            'email.unique' => 'Email "' . $request->email . '" sudah digunakan.',
+            'no_telepon.unique' => 'No. telepon "' . $request->no_telepon . '" sudah digunakan.',
         ]);
 
-        User::create([
-            'name'       => $request->name,
-            'email'      => $request->email,
-            'no_telepon' => $request->no_telepon,
-            'role'       => $request->role,
-            'status'     => $request->status ?? 'aktif',
-            'password'   => Hash::make($request->password),
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('users.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            User::create([
+                'name'       => $request->name,
+                'email'      => $request->email,
+                'no_telepon' => $request->no_telepon,
+                'role'       => $request->role,
+                'status'     => $request->status ?? 'aktif',
+                'password'   => Hash::make($request->password),
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('users.index')
+                    ->withErrors(['email' => 'Email "' . $request->email . '" sudah digunakan.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('users.index')
@@ -87,9 +107,9 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $rules = [
-            'name'        => 'required|string|max:255',
+            'name'        => 'required|string|max:255|unique:users,name,' . $user->id,
             'email'       => 'required|email|unique:users,email,' . $user->id,
-            'no_telepon'  => 'nullable|string|max:20',
+            'no_telepon'  => 'required|string|max:20|unique:users,no_telepon,' . $user->id,
             'role'        => 'required|in:petugas_administrasi,petugas_obat,kepala_pustu,super_admin',
             'status'      => 'required|in:aktif,nonaktif'
         ];
@@ -99,7 +119,13 @@ class UserController extends Controller
             $rules['password_confirmation'] = 'required_with:password|same:password';
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules);
+        $messages = [
+            'name.unique' => 'Nama pengguna "' . $request->name . '" sudah digunakan.',
+            'email.unique' => 'Email "' . $request->email . '" sudah digunakan.',
+            'no_telepon.unique' => 'No. telepon "' . $request->no_telepon . '" sudah digunakan.',
+        ];
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
             return redirect()->route('users.index')
@@ -120,7 +146,17 @@ class UserController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
-        $user->update($data);
+        try {
+            $user->update($data);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('users.index')
+                    ->withErrors(['email' => 'Email "' . $request->email . '" sudah digunakan.'])
+                    ->withInput()
+                    ->with('edit_user_id', $user->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('users.index')

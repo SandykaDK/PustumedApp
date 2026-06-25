@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pasien;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -61,27 +62,47 @@ class PasienController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nama'              => 'required|string|max:255',
-            'nik'               => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'nama'              => 'required|string|max:255|unique:pasien,nama',
+            'nik'               => 'required|string|max:255|unique:pasien,nik',
             'alamat'            => 'required|string|max:255',
             'jenis_kelamin'     => 'required|in:L,P',
             'golongan_darah'    => 'required|in:A,B,AB,O',
-            'no_telepon'        => 'required|string|max:255',
-            'no_bpjs'           => 'required|string|max:255',
+            'no_telepon'        => 'required|string|max:255|unique:pasien,no_telepon',
+            'no_bpjs'           => 'nullable|string|max:255|unique:pasien,no_bpjs',
             'status'            => 'required|in:aktif,non-aktif',
+        ], [
+            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
+            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
         ]);
 
-        Pasien::create([
-            'nama'          => $request->nama,
-            'nik'           => $request->nik,
-            'alamat'        => $request->alamat,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'golongan_darah'=> $request->golongan_darah,
-            'no_telepon'    => $request->no_telepon,
-            'no_bpjs'       => $request->no_bpjs,
-            'status'        => $request->status ?? 'aktif',
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('pasien.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            Pasien::create([
+                'nama'          => $request->nama,
+                'nik'           => $request->nik,
+                'alamat'        => $request->alamat,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'golongan_darah'=> $request->golongan_darah,
+                'no_telepon'    => $request->no_telepon,
+                'no_bpjs'       => $request->no_bpjs,
+                'status'        => $request->status ?? 'aktif',
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('pasien.index')
+                    ->withErrors(['nama' => 'Data pasien sudah ada.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('pasien.index')
@@ -96,14 +117,19 @@ class PasienController extends Controller
     public function update(Request $request, Pasien $pasien)
     {
         $validator = Validator::make($request->all(), [
-            'nama'          => 'required|string|max:255',
-            'nik'           => 'required|string|max:255',
+            'nama'          => 'required|string|max:255|unique:pasien,nama,' . $pasien->id,
+            'nik'           => 'required|string|max:255|unique:pasien,nik,' . $pasien->id,
             'alamat'        => 'required|string|max:255',
             'jenis_kelamin' => 'required|in:L,P',
             'golongan_darah'=> 'required|in:A,B,AB,O',
-            'no_telepon'    => 'required|string|max:255',
-            'no_bpjs'       => 'required|string|max:255',
+            'no_telepon'    => 'required|string|max:255|unique:pasien,no_telepon,' . $pasien->id,
+            'no_bpjs'       => 'nullable|string|max:255|unique:pasien,no_bpjs,' . $pasien->id,
             'status'        => 'required|in:aktif,non-aktif',
+        ], [
+            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
+            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
         ]);
 
         if ($validator->fails()) {
@@ -113,16 +139,26 @@ class PasienController extends Controller
                 ->with('edit_pasien_id', $pasien->id);
         }
 
-        $pasien->update($request->only([
-            'nama',
-            'nik',
-            'alamat',
-            'jenis_kelamin',
-            'golongan_darah',
-            'no_telepon',
-            'no_bpjs',
-            'status'
-        ]));
+        try {
+            $pasien->update($request->only([
+                'nama',
+                'nik',
+                'alamat',
+                'jenis_kelamin',
+                'golongan_darah',
+                'no_telepon',
+                'no_bpjs',
+                'status'
+            ]));
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('pasien.index')
+                    ->withErrors(['nama' => 'Data pasien sudah ada.'])
+                    ->withInput()
+                    ->with('edit_pasien_id', $pasien->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('pasien.index')

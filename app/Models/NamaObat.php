@@ -83,6 +83,30 @@ class NamaObat extends Model
         return false;
     }
 
+    /**
+     * Generate next kode_obat for a given jenis id.
+     * If $excludeId is provided it will be ignored when scanning existing codes (useful on update).
+     */
+    public static function generateKodeForJenis(int $jenisId, ?int $excludeId = null): string
+    {
+        $jenis = JenisObat::find($jenisId);
+        $prefix = $jenis ? $jenis->kode_jenis : 'XX';
+
+        $query = static::where('kode_obat', 'like', $prefix . '-%');
+        if ($excludeId) {
+            $query->where('id', '<>', $excludeId);
+        }
+
+        $last = $query->orderBy('kode_obat', 'desc')->first();
+
+        $next = 1;
+        if ($last && preg_match('/-(\d+)$/', $last->kode_obat, $m)) {
+            $next = intval($m[1]) + 1;
+        }
+
+        return sprintf('%s-%03d', $prefix, $next);
+    }
+
     // public function getTotalStokAttribute()
     // {
     //     return $this->stokObat()->sum('stok');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JenisObat;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class JenisObatController extends Controller
@@ -47,15 +48,33 @@ class JenisObatController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'kode_jenis'        => 'required|string|max:255',
-            'jenis_obat'       => 'required|string|max:255',
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'kode_jenis'        => 'required|string|max:255|unique:jenis_obat,kode_jenis',
+            'jenis_obat'       => 'required|string|max:255|unique:jenis_obat,jenis_obat',
+        ], [
+            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
+            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
         ]);
 
-        JenisObat::create([
-            'kode_jenis'       => $request->kode_jenis,
-            'jenis_obat'      => $request->jenis_obat,
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('jenis-obat.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            JenisObat::create([
+                'kode_jenis'       => $request->kode_jenis,
+                'jenis_obat'      => $request->jenis_obat,
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('jenis-obat.index')
+                    ->withErrors(['kode_jenis' => 'Kode Jenis "' . $request->kode_jenis . '" atau jenis obat sudah ada.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('jenis-obat.index')
@@ -70,8 +89,11 @@ class JenisObatController extends Controller
     public function update(Request $request, JenisObat $jenis_obat)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'kode_jenis'        => 'required|string|max:255',
-            'jenis_obat'       => 'required|string|max:255',
+            'kode_jenis'        => 'required|string|max:255|unique:jenis_obat,kode_jenis,' . $jenis_obat->id,
+            'jenis_obat'       => 'required|string|max:255|unique:jenis_obat,jenis_obat,' . $jenis_obat->id,
+        ], [
+            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
+            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
         ]);
 
         if ($validator->fails()) {
@@ -81,10 +103,20 @@ class JenisObatController extends Controller
                 ->with('edit_jenis_id', $jenis_obat->id);
         }
 
-        $jenis_obat->update($request->only([
-            'kode_jenis',
-            'jenis_obat'
-        ]));
+        try {
+            $jenis_obat->update($request->only([
+                'kode_jenis',
+                'jenis_obat'
+            ]));
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('jenis-obat.index')
+                    ->withErrors(['kode_jenis' => 'Kode Jenis "' . $request->kode_jenis . '" atau jenis obat sudah ada.'])
+                    ->withInput()
+                    ->with('edit_jenis_id', $jenis_obat->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('jenis-obat.index')

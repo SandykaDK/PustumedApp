@@ -287,6 +287,31 @@ class PemusnahanObatController extends Controller
         }
     }
 
+    public function reject($id)
+    {
+        $this->middleware('auth');
+
+        $user = auth()->user();
+        if (!$user || $user->role !== 'kepala_pustu') {
+            return back()->with('error', 'Anda tidak berwenang untuk menolak permintaan ini.');
+        }
+
+        $p = PemusnahanObat::findOrFail($id);
+        if ($p->status !== 'pending') {
+            return back()->with('error', 'Request tidak dapat ditolak karena telah diproses sebelumnya.');
+        }
+
+        try {
+            $p->status = 'cancelled';
+            $p->tanggal_pengajuan = null;
+            $p->save();
+
+            return redirect()->route('pemusnahan-obat.index', ['tab' => 'belum_dikonfirmasi'])->with('success', 'Pengajuan pemusnahan ditolak dan dikembalikan ke Belum Diajukan.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menolak request: ' . $e->getMessage());
+        }
+    }
+
     public function cancel($id)
     {
         $this->middleware('auth');

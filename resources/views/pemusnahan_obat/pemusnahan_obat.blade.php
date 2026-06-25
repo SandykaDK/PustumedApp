@@ -488,7 +488,7 @@
                                 </th>
                                 <th>
                                     <a href="{{ route('pemusnahan-obat.index', array_merge(request()->query(), ['sort_by' => 'tanggal_pemusnahan', 'direction' => $sort_by === 'tanggal_pemusnahan' && $direction === 'asc' ? 'desc' : 'asc'])) }}" class="sort-link">
-                                        Tanggal Pengajuan
+                                        Tanggal Pemusnahan
                                         @if($sort_by === 'tanggal_pemusnahan')
                                             @if($direction === 'asc')
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sort-icon">
@@ -515,7 +515,7 @@
                                         <td>{{ $detail->stok?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stok->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                         <td>{{ $detail->jumlah }}</td>
                                         <td>
-                                            <span class="local-dt" data-format="date" data-iso="{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->toIso8601String() : '' }}">{{ $req->tanggal_pengajuan ? $req->tanggal_pengajuan->translatedFormat('d F Y') : '-' }}</span>
+                                            <span class="local-dt" data-format="date" data-iso="{{ $req->tanggal_pemusnahan ? $req->tanggal_pemusnahan->toIso8601String() : '' }}">{{ $req->tanggal_pemusnahan ? $req->tanggal_pemusnahan->translatedFormat('d F Y') : '-' }}</span>
                                         </td>
                                         <td>
                                             @if($req->bukti_foto)
@@ -575,6 +575,8 @@
                                     </a>
                                 </th>
                                 <th>Nama Obat</th>
+                                <th>Jumlah</th>
+                                <th>Sisa Hari</th>
                                 <th>Keterangan</th>
                                 <th>Aksi</th>
                             </tr>
@@ -589,17 +591,30 @@
                                     <td>
                                         @php
                                             $names = [];
+                                            $totalJumlah = 0;
+                                            $minSisaHari = null;
                                             if ($req->details) {
                                                 foreach ($req->details as $detail) {
                                                     if ($detail->namaObat) {
                                                         $names[] = $detail->namaObat->nama_obat;
                                                     }
+                                                    $totalJumlah += $detail->jumlah ?: 0;
+                                                    if ($detail->stok?->tanggal_kadaluwarsa) {
+                                                        $sisaHari = Carbon\Carbon::today()->diffInDays(\Carbon\Carbon::parse($detail->stok->tanggal_kadaluwarsa), false);
+                                                        $sisaHari = is_numeric($sisaHari) ? round($sisaHari) : $sisaHari;
+                                                        if ($minSisaHari === null || $sisaHari < $minSisaHari) {
+                                                            $minSisaHari = $sisaHari;
+                                                        }
+                                                    }
                                                 }
                                             }
                                             $displayNames = !empty($names) ? implode(', ', $names) : '-';
+                                            $displaySisaHari = $minSisaHari !== null ? $minSisaHari . ' Hari' : '-';
                                         @endphp
                                         {{ $displayNames }}
                                     </td>
+                                    <td>{{ $totalJumlah }}</td>
+                                    <td>{{ $displaySisaHari }}</td>
                                     <td>{{ Str::limit($req->keterangan, 40) }}</td>
                                     <td>
                                         <div class="action-buttons">
@@ -607,6 +622,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322C3.2 7.036 7.522 4 12 4c4.478 0 8.8 3.036 9.964 8.322a1.125 1.125 0 0 1 0 .356C20.8 16.964 16.478 20 12 20c-4.478 0-8.8-3.036-9.964-8.322a1.125 1.125 0 0 1 0-.356z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
                                             </button>
                                             @if(auth()->user()?->role === 'kepala_pustu')
+                                                <button type="button" class="action-btn reject" data-reject-action="{{ url('/pemusnahan-obat/'.$req->id.'/reject') }}" data-reject-name="{{ e($displayNames) }}" title="Tolak">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6"/></svg>
+                                                </button>
                                                 <button type="button" class="action-btn approve" data-approve-action="{{ url('/pemusnahan-obat/'.$req->id.'/approve') }}" data-approve-name="{{ e($displayNames) }}" title="Setujui">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                                                 </button>
@@ -852,6 +870,25 @@
     </div>
 </div>
 
+<div id="rejectPemusnahanModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="rejectPemusnahanTitle">
+        <div class="modal-header">
+            <h2 id="rejectPemusnahanTitle">Tolak Permintaan</h2>
+            <button type="button" id="closeRejectPemusnahanModal" class="modal-close" aria-label="Tutup">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="rejectPemusnahanMessage" style="margin:0; color:#374151; line-height:1.6;"></p>
+        </div>
+        <div class="modal-actions" style="margin-top:18px; justify-content:flex-end;">
+            <button type="button" id="cancelRejectPemusnahan" class="btn-secondary">Batal</button>
+            <form id="rejectPemusnahanForm" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" class="btn-danger">Tolak</button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Page Alert Modal -->
 <div id="pageAlertModal" class="modal hidden" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="pageAlertTitle">
@@ -906,6 +943,12 @@
     const cancelApproveModalBtn = document.getElementById('cancelApprovePemusnahan');
     const approvePemusnahanForm = document.getElementById('approvePemusnahanForm');
     const approvePemusnahanMessage = document.getElementById('approvePemusnahanMessage');
+
+    const rejectModal = document.getElementById('rejectPemusnahanModal');
+    const closeRejectModalBtn = document.getElementById('closeRejectPemusnahanModal');
+    const cancelRejectModalBtn = document.getElementById('cancelRejectPemusnahan');
+    const rejectPemusnahanForm = document.getElementById('rejectPemusnahanForm');
+    const rejectPemusnahanMessage = document.getElementById('rejectPemusnahanMessage');
 
     const pageAlertModal = document.getElementById('pageAlertModal');
     const closePageAlertModalBtn = document.getElementById('closePageAlertModal');
@@ -1023,6 +1066,8 @@
         if (!approveModal || !approvePemusnahanForm || !approvePemusnahanMessage) return;
         approvePemusnahanForm.action = action;
         approvePemusnahanMessage.innerHTML = `Apakah Anda yakin ingin menyetujui permintaan pemusnahan obat <strong>${escapeHtml(namaObat || 'ini')}</strong>?`;
+        approveModal.querySelector('#approvePemusnahanTitle').textContent = 'Setujui Permintaan';
+        approvePemusnahanForm.querySelector('button[type="submit"]').textContent = 'Setujui';
         approveModal.classList.remove('hidden');
         approveModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -1035,6 +1080,31 @@
         document.body.style.overflow = 'auto';
         if (approvePemusnahanForm) {
             approvePemusnahanForm.action = '';
+        }
+        if (approveModal.querySelector('#approvePemusnahanTitle')) {
+            approveModal.querySelector('#approvePemusnahanTitle').textContent = 'Setujui Permintaan';
+        }
+        if (approvePemusnahanForm?.querySelector('button[type="submit"]')) {
+            approvePemusnahanForm.querySelector('button[type="submit"]').textContent = 'Setujui';
+        }
+    }
+
+    function openRejectPemusnahanModal(action, namaObat) {
+        if (!rejectModal || !rejectPemusnahanForm || !rejectPemusnahanMessage) return;
+        rejectPemusnahanForm.action = action;
+        rejectPemusnahanMessage.innerHTML = `Apakah Anda yakin ingin menolak permintaan pemusnahan obat <strong>${escapeHtml(namaObat || 'ini')}</strong>?`;
+        rejectModal.classList.remove('hidden');
+        rejectModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeRejectPemusnahanModal() {
+        if (!rejectModal) return;
+        rejectModal.classList.add('hidden');
+        rejectModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+        if (rejectPemusnahanForm) {
+            rejectPemusnahanForm.action = '';
         }
     }
 
@@ -1061,6 +1131,14 @@
         openApprovePemusnahanModal(action, namaObat);
     }
 
+    function onOpenRejectModal(e) {
+        const btn = e.currentTarget;
+        const action = btn.dataset.rejectAction;
+        const namaObat = btn.dataset.rejectName || 'permintaan ini';
+        if (!action) return;
+        openRejectPemusnahanModal(action, namaObat);
+    }
+
     function onOpenCancelModal(e) {
         const btn = e.currentTarget;
         const id = btn.dataset.id;
@@ -1085,6 +1163,8 @@
     if (cancelCancelBtn) cancelCancelBtn.addEventListener('click', closeCancelPemusnahanModal);
     if (closeApproveModalBtn) closeApproveModalBtn.addEventListener('click', closeApprovePemusnahanModal);
     if (cancelApproveModalBtn) cancelApproveModalBtn.addEventListener('click', closeApprovePemusnahanModal);
+    if (closeRejectModalBtn) closeRejectModalBtn.addEventListener('click', closeRejectPemusnahanModal);
+    if (cancelRejectModalBtn) cancelRejectModalBtn.addEventListener('click', closeRejectPemusnahanModal);
     if (closePageAlertModalBtn) closePageAlertModalBtn.addEventListener('click', closePageAlertModal);
     if (pageAlertOkButton) pageAlertOkButton.addEventListener('click', closePageAlertModal);
 
@@ -1218,7 +1298,7 @@
         const pengaju = req.user?.name || '-';
         const tanggalPengajuan = formatDateTimeISO(req.tanggal_pengajuan);
         const tanggalDisetujui = formatDateTimeISO(req.approved_at);
-        const tanggalPemusnahan = formatDateTimeISO(req.tanggal_pemusnahan);
+        const tanggalPemusnahan = formatDateISO(req.tanggal_pemusnahan);
         const keterangan = req.keterangan || '-';
 
         let html = `<div class="pemusnahan-meta">` +
@@ -1318,6 +1398,10 @@
             btn.removeEventListener('click', onOpenApproveModal);
             btn.addEventListener('click', onOpenApproveModal);
         });
+        document.querySelectorAll('.reject').forEach(btn => {
+            btn.removeEventListener('click', onOpenRejectModal);
+            btn.addEventListener('click', onOpenRejectModal);
+        });
         // initialize confirm-delete and confirm-approve components in dynamically-injected templates
         document.querySelectorAll('.confirm-delete-component, .confirm-approve-component').forEach(comp => {
             if (comp.dataset.caInit) return; // already initialized
@@ -1378,7 +1462,6 @@
                     this.style.boxShadow = '0 2px 8px rgba(15,23,42,0.04) !important';
                 });
             }
-            if (overlay) overlay.addEventListener('click', closeModal);
             // hover effect for confirm button
             const confirmBtn = modal.querySelector('.cd-confirm');
             if (confirmBtn) {
@@ -1391,7 +1474,6 @@
                     this.style.boxShadow = '0 6px 14px rgba(239,68,68,0.08) !important';
                 });
             }
-            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.classList.contains('open')) closeModal(); });
             comp.dataset.caInit = '1';
         });
     }

@@ -61,6 +61,7 @@ class LaporanPemusnahanObatController extends Controller
                 $reportRows->push([
                     'nama_obat' => $namaObat,
                     'tanggal_kadaluwarsa' => $tglKadaluwarsa,
+                    'jumlah' => $stok->stok,
                     'tanggal_pemusnahan' => null,
                     'tanggal_pemusnahan_sort' => null,
                     'pengaju' => 'N/A',
@@ -76,6 +77,7 @@ class LaporanPemusnahanObatController extends Controller
                 $reportRows->push([
                     'nama_obat' => $namaObat,
                     'tanggal_kadaluwarsa' => $tglKadaluwarsa,
+                    'jumlah' => $stok->stok,
                     'tanggal_pemusnahan' => optional($pemusnahan->tanggal_pemusnahan)->translatedFormat('d F Y'),
                     'tanggal_pemusnahan_sort' => optional($pemusnahan->tanggal_pemusnahan)->format('Y-m-d H:i:s'),
                     'pengaju' => $pemusnahan->user->name ?? 'N/A',
@@ -93,7 +95,7 @@ class LaporanPemusnahanObatController extends Controller
         }
 
         // Sorting pada data gabungan
-        $allowedSorts = ['nama_obat', 'tanggal_kadaluwarsa', 'tanggal_pemusnahan', 'status'];
+        $allowedSorts = ['nama_obat', 'tanggal_kadaluwarsa', 'stok', 'tanggal_pemusnahan', 'status'];
         $sort_by = in_array($sort_by, $allowedSorts) ? $sort_by : 'tanggal_kadaluwarsa';
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 

@@ -314,7 +314,8 @@
 
                             <div class="form-group">
                                 <label for="tanggal_penerimaan">Tanggal Penerimaan</label>
-                                <input id="tanggal_penerimaan" type="date" name="tanggal_penerimaan" value="{{ old('tanggal_penerimaan', now()->format('Y-m-d')) }}" required>
+                                <input id="tanggal_penerimaan" type="date" name="tanggal_penerimaan_disabled" value="{{ old('tanggal_penerimaan', now()->format('Y-m-d')) }}" required disabled>
+                                <input type="hidden" name="tanggal_penerimaan" value="{{ old('tanggal_penerimaan', now()->format('Y-m-d')) }}">
                             </div>
 
                             <div class="form-group">
@@ -643,13 +644,6 @@
         closeCreateBtn && closeCreateBtn.addEventListener('click', closeCreateModal);
         cancelCreateBtn && cancelCreateBtn.addEventListener('click', closeCreateModal);
 
-        createModal && createModal.addEventListener('click', function(e) {
-            if (e.target === createModal) closeCreateModal();
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && createModal && !createModal.classList.contains('hidden')) closeCreateModal();
-        });
 
         @if ($errors->any() && !session('edit_penerimaan_obat_id'))
             document.addEventListener('DOMContentLoaded', function() {
@@ -767,10 +761,6 @@
 
         closeEditBtn && closeEditBtn.addEventListener('click', closeEditModal);
         cancelEditBtn && cancelEditBtn.addEventListener('click', closeEditModal);
-
-        editModal && editModal.addEventListener('click', function(e) {
-            if (e.target === editModal) closeEditModal();
-        });
 
         // Auto submit filter form with debounce.
         const filterForm = document.querySelector('.table-actions form[method="GET"]');

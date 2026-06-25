@@ -1,4 +1,4 @@
-@props(['type' => null, 'message' => null, 'autoHide' => true, 'duration' => 4000])
+@props(['type' => null, 'message' => null, 'autoHide' => true, 'duration' => 7000])
 
 @php
     // Tentukan tipe dan pesan dari parameter atau session

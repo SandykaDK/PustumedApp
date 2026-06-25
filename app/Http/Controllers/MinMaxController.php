@@ -46,7 +46,6 @@ class MinMaxController extends Controller
 
         $allowedStatuses = [
             '' => 'Semua Status',
-            'belum-dihitung' => 'Belum dihitung',
             'butuh-restock' => 'Perlu restock',
             'warning' => 'Waspada',
             'aman' => 'Aman'
@@ -60,6 +59,8 @@ class MinMaxController extends Controller
         $allowedPerPage = [10, 25, 50];
         $perPageOption = $perPageInput;
 
+        $thresholdDate = Carbon::now()->addDays(30)->toDateString();
+
         $query = NamaObat::with([
                 'satuanObat',
                 'minMaxRecords' => function ($builder) use ($selectedYear, $selectedMonth) {
@@ -67,7 +68,13 @@ class MinMaxController extends Controller
                         ->where('periode_month', $selectedMonth);
                 },
             ])
-            ->withSum('stokObat as total_stok', 'stok')
+            ->withSum(['stokObat as total_stok' => function ($q) use ($thresholdDate) {
+                $q->where('stok', '>', 0)
+                  ->where(function ($q2) use ($thresholdDate) {
+                      $q2->whereNull('tanggal_kadaluwarsa')
+                         ->orWhere('tanggal_kadaluwarsa', '>', $thresholdDate);
+                  });
+            }], 'stok')
             ->whereHas('minMaxRecords', function ($builder) use ($selectedYear, $selectedMonth) {
                 $builder->where('periode_year', $selectedYear)
                     ->where('periode_month', $selectedMonth);

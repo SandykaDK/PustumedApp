@@ -25,6 +25,25 @@
     <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .status-available {
+            background-color: #16a34a; /* green */
+        }
+        .status-unavailable {
+            background-color: #dc2626; /* red */
+        }
+        .status-unknown {
+            background-color: #6b7280; /* gray */
+        }
+    </style>
 </head>
 <body>
 
@@ -318,10 +337,6 @@
                         @csrf
 
                         <div class="form-group">
-                            <label for="kode_obat">Kode Obat</label>
-                            <input id="kode_obat" type="text" name="kode_obat" value="{{ old('kode_obat') }}" required>
-                        </div>
-                        <div class="form-group">
                             <label for="nama_obat">Nama Obat</label>
                             <input id="nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
                         </div>
@@ -382,11 +397,6 @@
                     <form id="editNamaObatForm" action="" method="POST" class="form-component">
                         @csrf
                         <input type="hidden" name="_method" value="PUT">
-
-                        <div class="form-group">
-                            <label for="edit_kode_obat">Kode Obat</label>
-                            <input id="edit_kode_obat" type="text" name="kode_obat" value="{{ old('kode_obat') }}" required>
-                        </div>
 
                         <div class="form-group">
                             <label for="edit_nama_obat">Nama Obat</label>
@@ -457,6 +467,8 @@
         const closeBtn = document.getElementById('closeCreateNamaObatModal');
         const cancelBtn = document.getElementById('cancelCreateNamaObatModal');
 
+        const createForm = document.querySelector('#createNamaObatModal form');
+
         function openModal() {
             if (!modal) return;
             modal.classList.remove('hidden');
@@ -467,8 +479,31 @@
             });
         }
 
+        function clearCreateForm() {
+            if (!createForm) return;
+            createForm.reset();
+
+            if (window.jQuery) {
+                createForm.querySelectorAll('select').forEach(select => {
+                    if (jQuery(select).data('select2')) {
+                        jQuery(select).trigger('change');
+                    }
+                });
+            }
+        }
+
+        function removeErrorList(targetModal) {
+            if (!targetModal) return;
+            const errorList = targetModal.querySelector('.error-list');
+            if (errorList) {
+                errorList.remove();
+            }
+        }
+
         function closeModal() {
             if (!modal) return;
+            removeErrorList(modal);
+            clearCreateForm();
             modal.classList.add('hidden');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = 'auto';
@@ -477,14 +512,6 @@
         openBtn && openBtn.addEventListener('click', openModal);
         closeBtn && closeBtn.addEventListener('click', closeModal);
         cancelBtn && cancelBtn.addEventListener('click', closeModal);
-
-        modal && modal.addEventListener('click', function(e) {
-            if (e.target === modal) closeModal();
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
 
         // Auto open create modal if validation errors belong to create
         @if ($errors->any() && !session('edit_nama_obat_id') && !(auth()->check() && auth()->user()->role === 'petugas_administrasi'))
@@ -509,8 +536,17 @@
             });
         }
 
+        function removeErrorList(targetModal) {
+            if (!targetModal) return;
+            const errorList = targetModal.querySelector('.error-list');
+            if (errorList) {
+                errorList.remove();
+            }
+        }
+
         function closeEditModal() {
             if (!editModal) return;
+            removeErrorList(editModal);
             editModal.classList.add('hidden');
             editModal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = 'auto';
@@ -571,10 +607,6 @@
         closeEditBtn && closeEditBtn.addEventListener('click', closeEditModal);
         cancelEditBtn && cancelEditBtn.addEventListener('click', closeEditModal);
 
-        editModal && editModal.addEventListener('click', function(e) {
-            if (e.target === editModal) closeEditModal();
-        });
-
         const editNamaObatIdFromServer = @json(session('edit_nama_obat_id'));
         const oldInput = @json(session()->getOldInput());
 
@@ -618,6 +650,38 @@
             });
         }
 
+        // Auto-generate kode_obat when jenis is selected (create & edit)
+        (function() {
+            const createJenis = document.getElementById('create_jenis_obat_id');
+            const createKode = document.getElementById('kode_obat');
+            const editJenis = document.getElementById('edit_jenis_obat_id');
+            const editKode = document.getElementById('edit_kode_obat');
+
+            function fetchKode(jenisId, cb) {
+                if (!jenisId) { cb(''); return; }
+                fetch('/nama-obat/generate-kode/' + jenisId)
+                    .then(r => r.json())
+                    .then(d => cb(d.kode || ''))
+                    .catch(() => cb(''));
+            }
+
+            if (createJenis && createKode) {
+                createJenis.addEventListener('change', function() {
+                    fetchKode(this.value, function(k) { createKode.value = k; });
+                });
+                // if there's an initial value (old input), trigger to fill kode
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (createJenis.value) createJenis.dispatchEvent(new Event('change'));
+                });
+            }
+
+            if (editJenis && editKode) {
+                editJenis.addEventListener('change', function() {
+                    fetchKode(this.value, function(k) { editKode.value = k; });
+                });
+            }
+        })();
+
         // Stock Modal handlers
         const stockModal = document.getElementById('stockModal');
         const closeStockModalBtn = document.getElementById('closeStockModal');
@@ -655,12 +719,13 @@
                     let tableHtml = '<table class="nama-obat-table" style="margin-top: 0;"><thead><tr><th>No</th><th>No. Batch</th><th>Tanggal Kadaluwarsa</th><th>Stok</th><th>Status</th></tr></thead><tbody>';
 
                     data.stokItems.forEach((item, idx) => {
+                        const statusClass = item.status_class ? item.status_class : '';
                         tableHtml += `<tr>
                             <td>${idx + 1}</td>
                             <td>${item.no_batch}</td>
                             <td>${item.tanggal_kadaluwarsa}</td>
                             <td>${item.stok}</td>
-                            <td>${item.status}</td>
+                            <td><span class="status-badge ${statusClass}">${item.status}</span></td>
                         </tr>`;
                     });
 

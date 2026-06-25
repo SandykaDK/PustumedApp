@@ -88,6 +88,7 @@
                     <thead>
                         <tr>
                             <th>{!! sortLink('tanggal_pengeluaran', 'Tanggal') !!}</th>
+                            <th>{!! sortLink('user_id', 'Petugas') !!}</th>
                             <th>No. BPJS</th>
                             <th>{!! sortLink('pasien_id', 'Pasien') !!}</th>
                             <th>{!! sortLink('dokter_id', 'Dokter') !!}</th>
@@ -105,6 +106,7 @@
                                         <span>{{ \Carbon\Carbon::parse($record->tanggal_pengeluaran)->format('d/m/Y') }}</span>
                                     </div>
                                 </td>
+                                <td>{{ $record->User->name ?? '-' }}</td>
                                 <td>{{ $record->Pasien->no_bpjs ?? '-' }}</td>
                                 <td>{{ $record->Pasien->nama ?? '-' }}</td>
                                 <td>{{ $record->Dokter->nama ?? '-' }}</td>
@@ -117,22 +119,6 @@
                                               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                             </svg>
                                         </a>
-
-                                        <button type="button" class="action-btn edit openEditModal" data-id="{{ $record->id }}" data-record='@json($record->load(["detailPengeluaranObat", "user", "dokter"]))'>
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                            viewBox="0 0 24 24" stroke-width="1.5"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m16.862 4.487 1.687-1.688
-                                                a1.875 1.875 0 1 1 2.652 2.652
-                                                L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13
-                                                L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897
-                                                l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75
-                                                A2.25 2.25 0 0 1 15.75 21H5.25
-                                                A2.25 2.25 0 0 1 3 18.75V8.25
-                                                A2.25 2.25 0 0 1 5.25 6H10" />
-                                        </svg>
-                                        </button>
 
                                         <x-confirm-delete action="{{ route('pengeluaran-obat.destroy', $record->id) }}" :id="'delete-pengeluaran-'.$record->id" title="Hapus pengeluaran Obat" message="Yakin ingin menghapus pengeluaran obat {{ $record->no_batch }}?">
                                             <button type="button" class="action-btn delete">
@@ -161,13 +147,14 @@
                                 </td>
                             </tr>
                             <tr class="pengeluaran-detail-row hidden" id="detail-row-{{ $record->id }}">
-                                <td colspan="7">
+                                <td colspan="8">
                                     <div class="detail-panel">
                                         <div class="detail-table-wrapper">
                                             @if ($record->detailPengeluaranObat->isNotEmpty())
                                                 <table class="expanded-detail-table">
                                                     <thead>
                                                         <tr>
+                                                            <th>Batch</th>
                                                             <th>Nama Obat</th>
                                                             <th>Tanggal Kadaluwarsa</th>
                                                             <th>Jumlah Keluar</th>
@@ -178,8 +165,9 @@
                                                     <tbody>
                                                         @foreach($record->detailPengeluaranObat as $detail)
                                                             <tr>
+                                                                <td>{{ $detail->stokObat?->no_batch ?? '-' }}</td>
                                                                 <td>{{ $detail->namaObat->nama_obat ?? '-' }}</td>
-                                                                <td>{{ $detail->stokObat?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stokObat->tanggal_kadaluwarsa)->format('d M Y') : '-' }}</td>
+                                                                <td>{{ $detail->stokObat?->tanggal_kadaluwarsa ? \Carbon\Carbon::parse($detail->stokObat->tanggal_kadaluwarsa)->locale('id')->translatedFormat('d F Y') : '-' }}</td>
                                                                 <td>{{ $detail->jumlah_keluar }}</td>
                                                                 <td>{{ $detail->satuan->satuan_obat ?? '-' }}</td>
                                                                 <td>{{ $detail->lokasi_penyimpanan ?? '-' }}</td>
@@ -196,7 +184,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="empty">Tidak ada data pengeluaran obat</td>
+                                <td colspan="8" class="empty">Tidak ada data pengeluaran obat</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -245,7 +233,8 @@
                                 <div>
                                     <div class="form-group">
                                         <label for="tanggal_pengeluaran">Tanggal Pengeluaran</label>
-                                        <input type="date" id="tanggal_pengeluaran" name="tanggal_pengeluaran" value="{{ old('tanggal_pengeluaran', now()->format('Y-m-d')) }}" required>
+                                        <input type="date" id="tanggal_pengeluaran" name="tanggal_pengeluaran_disabled" value="{{ old('tanggal_pengeluaran', now()->format('Y-m-d')) }}" required disabled>
+                                        <input type="hidden" name="tanggal_pengeluaran" value="{{ old('tanggal_pengeluaran', now()->format('Y-m-d')) }}">
                                     </div>
 
                                     <div class="form-group">
@@ -491,8 +480,9 @@
                     <input type="number" ${isExisting ? 'readonly' : ''} name="details[${index}][jumlah_keluar]" class="table-input jumlah-keluar-input" data-detail-index="${index}" min="1" value="${data.jumlah_keluar || ''}" ${isExisting ? '' : 'required'}>
                 </td>
                 <td>
-                    <select name="details[${index}][stok_obat_id]" class="table-input tanggal-kadaluwarsa-select" data-detail-index="${index}" data-stok-obat-id="${data.stok_obat_id || ''}" ${isExisting ? 'disabled' : 'disabled'}>
+                    <select disabled class="table-input tanggal-kadaluwarsa-select" data-detail-index="${index}" data-stok-obat-id="${data.stok_obat_id || ''}">
                         <option value="">Pilih Tanggal</option>
+                        ${data.stok_obat_id ? `<option value="${data.stok_obat_id}" selected>${data.stok_obat && data.stok_obat.tanggal_kadaluwarsa ? data.stok_obat.tanggal_kadaluwarsa : data.tanggal_kadaluwarsa || data.stok_obat_id}</option>` : ''}
                     </select>
                     <input type="hidden" name="details[${index}][stok_obat_id]" class="stok-obat-hidden" data-detail-index="${index}" value="${data.stok_obat_id || ''}">
                 </td>
@@ -724,7 +714,13 @@
                     }
                 }, 300);
 
-                const onChange = function(e) { try { autoAllocateForDetail(this.dataset.detailIndex); } catch (err) {} };
+                const onChange = function(e) {
+                    if (this._pustumed_recentlyAutoAllocated) {
+                        this._pustumed_recentlyAutoAllocated = false;
+                        return;
+                    }
+                    try { autoAllocateForDetail(this.dataset.detailIndex); } catch (err) {}
+                };
 
                 // store handlers on element so they can be removed next time
                 input._pustumed_oninput = onInput;
@@ -818,6 +814,9 @@
                                 if (storedStokObatId && storedStokObatId == stok.id) {
                                     option.selected = true;
                                     tanggalKadaluwarsaSelect.dataset.stokValue = stok.stok;
+                                    tanggalKadaluwarsaSelect.value = stok.id;
+                                    const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
+                                    if (stokHidden) stokHidden.value = stok.id;
                                     console.log('DEBUG: marked stok option as selected, id=', stok.id);
                                 } else {
                                     console.log(`DEBUG: stok id ${stok.id} does not match storedStokObatId ${storedStokObatId}`);
@@ -889,6 +888,11 @@
             const selectedOption = stokSelect.options[stokSelect.selectedIndex];
             const stokValue = selectedOption.dataset.stok || 0;
             stokSelect.dataset.stokValue = stokValue;
+
+            const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${stokSelect.dataset.detailIndex}"]`);
+            if (stokHidden && selectedOption) {
+                stokHidden.value = selectedOption.value;
+            }
 
             // Validate jumlah keluar if already filled
             const detailIndex = stokSelect.dataset.detailIndex;
@@ -1074,6 +1078,7 @@
                 }
 
                 // totalAllocated >= requested: apply allocations and create extra rows as before
+                jumlahInput._pustumed_recentlyAutoAllocated = true;
                 jumlahInput.value = allocations[0].qty;
                 validateJumlahKeluar(jumlahInput, allocations[0].qty);
 
@@ -1104,18 +1109,13 @@
                     // populate the nama select & trigger change to populate satuan/hidden fields
                     const insertedNama = insertedRow.querySelector('.nama-obat-select');
                     if (insertedNama) {
-                        try {
-                            if (window.jQuery && jQuery(insertedNama).hasClass('select2-hidden-accessible')) {
+                        insertedNama.value = namaObatId;
+                        if (window.jQuery && jQuery(insertedNama).hasClass('select2-hidden-accessible')) {
+                            try {
                                 jQuery(insertedNama).val(String(namaObatId)).trigger('change');
-                            } else {
-                                insertedNama.value = namaObatId;
-                                const evt = new Event('change', { bubbles: true });
-                                insertedNama.dispatchEvent(evt);
+                            } catch (err) {
+                                console.warn('Warning setting inserted nama obat select value with select2', err);
                             }
-                        } catch (err) {
-                            insertedNama.value = namaObatId;
-                            const evt = new Event('change', { bubbles: true });
-                            insertedNama.dispatchEvent(evt);
                         }
                     }
 
@@ -1152,11 +1152,6 @@
         }
         if (cancelCreateBtn) {
             cancelCreateBtn.addEventListener('click', closeCreateModal);
-        }
-        if (createModal) {
-            createModal.addEventListener('click', (e) => {
-                if (e.target === createModal) closeCreateModal();
-            });
         }
 
         // Edit Modal
@@ -1277,11 +1272,6 @@
         }
         if (cancelEditBtn) {
             cancelEditBtn.addEventListener('click', closeEditModal);
-        }
-        if (editModal) {
-            editModal.addEventListener('click', (e) => {
-                if (e.target === editModal) closeEditModal();
-            });
         }
 
         function enableDisabledFields(form) {

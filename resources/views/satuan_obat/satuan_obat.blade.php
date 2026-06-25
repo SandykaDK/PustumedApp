@@ -307,6 +307,8 @@
         const closeBtn = document.getElementById('closeCreateSatuanModal');
         const cancelBtn = document.getElementById('cancelCreateSatuanModal');
 
+        const createForm = document.querySelector('#createSatuanModal form');
+
         function openModal() {
             if (!modal) return;
             modal.classList.remove('hidden');
@@ -314,8 +316,31 @@
             document.body.style.overflow = 'hidden';
         }
 
+        function clearCreateForm() {
+            if (!createForm) return;
+            createForm.reset();
+
+            if (window.jQuery) {
+                createForm.querySelectorAll('select').forEach(select => {
+                    if (jQuery(select).data('select2')) {
+                        jQuery(select).trigger('change');
+                    }
+                });
+            }
+        }
+
+        function removeErrorList(targetModal) {
+            if (!targetModal) return;
+            const errorList = targetModal.querySelector('.error-list');
+            if (errorList) {
+                errorList.remove();
+            }
+        }
+
         function closeModal() {
             if (!modal) return;
+            removeErrorList(modal);
+            clearCreateForm();
             modal.classList.add('hidden');
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = 'auto';
@@ -324,14 +349,6 @@
         openBtn && openBtn.addEventListener('click', openModal);
         closeBtn && closeBtn.addEventListener('click', closeModal);
         cancelBtn && cancelBtn.addEventListener('click', closeModal);
-
-        modal && modal.addEventListener('click', function(e) {
-            if (e.target === modal) closeModal();
-        });
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
-        });
 
         // Auto open create modal if validation errors belong to create
         @if ($errors->any() && !session('edit_satuan_id'))
@@ -382,10 +399,6 @@
 
         closeEditBtn && closeEditBtn.addEventListener('click', closeEditModal);
         cancelEditBtn && cancelEditBtn.addEventListener('click', closeEditModal);
-
-        editModal && editModal.addEventListener('click', function(e) {
-            if (e.target === editModal) closeEditModal();
-        });
 
         const editSatuanIdFromServer = @json(session('edit_satuan_id'));
         const oldInput = @json(session()->getOldInput());

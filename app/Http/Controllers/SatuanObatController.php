@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SatuanObat;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -48,15 +49,32 @@ class SatuanObatController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'kode_satuan'        => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'kode_satuan'        => 'required|string|max:255|unique:satuan_obat,kode_satuan',
             'satuan_obat'       => 'required|string|max:255',
+        ], [
+            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
         ]);
 
-        SatuanObat::create([
-            'kode_satuan'       => $request->kode_satuan,
-            'satuan_obat'      => $request->satuan_obat,
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('satuan-obat.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            SatuanObat::create([
+                'kode_satuan'       => $request->kode_satuan,
+                'satuan_obat'      => $request->satuan_obat,
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('satuan-obat.index')
+                    ->withErrors(['kode_satuan' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('satuan-obat.index')
@@ -71,8 +89,10 @@ class SatuanObatController extends Controller
     public function update(Request $request, SatuanObat $satuan_obat)
     {
         $validator = Validator::make($request->all(), [
-            'kode_satuan'        => 'required|string|max:255',
+            'kode_satuan'        => 'required|string|max:255|unique:satuan_obat,kode_satuan,' . $satuan_obat->id,
             'satuan_obat'       => 'required|string|max:255',
+        ], [
+            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
         ]);
 
         if ($validator->fails()) {
@@ -82,10 +102,20 @@ class SatuanObatController extends Controller
                 ->with('edit_satuan_obat_id', $satuan_obat->id);
         }
 
-        $satuan_obat->update($request->only([
-            'kode_satuan',
-            'satuan_obat'
-        ]));
+        try {
+            $satuan_obat->update($request->only([
+                'kode_satuan',
+                'satuan_obat'
+            ]));
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('satuan-obat.index')
+                    ->withErrors(['kode_satuan' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.'])
+                    ->withInput()
+                    ->with('edit_satuan_obat_id', $satuan_obat->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('satuan-obat.index')

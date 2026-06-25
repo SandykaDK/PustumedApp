@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NamaObat;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\JenisObat;
@@ -15,12 +16,13 @@ class NamaObatController extends Controller
         $search = $request->search;
         $filterJenis = $request->jenis_obat_id;
         $filterSatuan = $request->satuan_obat_id;
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['kode_obat',
+        $allowed = ['id',
+                    'kode_obat',
                     'nama_obat',
                     'jenis_obat_id',
                     'satuan_obat_id',
@@ -80,21 +82,40 @@ class NamaObatController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'kode_obat'        => 'required|string|max:255',
-            'nama_obat'       => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
+            'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat',
             'jenis_obat_id'  => 'required|exists:jenis_obat,id',
             'satuan_obat_id'  => 'required|exists:satuan_obat,id',
             'lokasi_penyimpanan' => 'nullable|string|max:255',
+        ], [
+            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
         ]);
 
-        NamaObat::create([
-            'kode_obat'       => $request->kode_obat,
-            'nama_obat'      => $request->nama_obat,
-            'jenis_obat_id' => $request->jenis_obat_id,
-            'satuan_obat_id' => $request->satuan_obat_id,
-            'lokasi_penyimpanan' => $request->lokasi_penyimpanan,
-        ]);
+        if ($validator->fails()) {
+            return redirect()->route('nama-obat.index')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        // generate kode_obat from jenis
+        $kode = NamaObat::generateKodeForJenis((int)$request->jenis_obat_id);
+
+        try {
+            NamaObat::create([
+                'kode_obat'       => $kode,
+                'nama_obat'      => $request->nama_obat,
+                'jenis_obat_id' => $request->jenis_obat_id,
+                'satuan_obat_id' => $request->satuan_obat_id,
+                'lokasi_penyimpanan' => $request->lokasi_penyimpanan,
+            ]);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('nama-obat.index')
+                    ->withErrors(['nama_obat' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.'])
+                    ->withInput();
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('nama-obat.index')
@@ -108,12 +129,14 @@ class NamaObatController extends Controller
 
     public function update(Request $request, NamaObat $nama_obat)
     {
+
         $validator = Validator::make($request->all(), [
-            'kode_obat'        => 'required|string|max:255',
-            'nama_obat'       => 'required|string|max:255',
+            'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat,' . $nama_obat->id,
             'jenis_obat_id'  => 'required|exists:jenis_obat,id',
             'satuan_obat_id'  => 'required|exists:satuan_obat,id',
             'lokasi_penyimpanan' => 'nullable|string|max:255',
+        ], [
+            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
         ]);
 
         if ($validator->fails()) {
@@ -123,13 +146,29 @@ class NamaObatController extends Controller
                 ->with('edit_nama_obat_id', $nama_obat->id);
         }
 
-        $nama_obat->update($request->only([
-            'kode_obat',
+        $data = $request->only([
             'nama_obat',
             'jenis_obat_id',
             'satuan_obat_id',
             'lokasi_penyimpanan',
-        ]));
+        ]);
+
+        // if jenis changed, generate new kode, otherwise keep existing
+        if ((int)$request->jenis_obat_id !== (int)$nama_obat->jenis_obat_id) {
+            $data['kode_obat'] = NamaObat::generateKodeForJenis((int)$request->jenis_obat_id, $nama_obat->id);
+        }
+
+        try {
+            $nama_obat->update($data);
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23000') {
+                return redirect()->route('nama-obat.index')
+                    ->withErrors(['nama_obat' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.'])
+                    ->withInput()
+                    ->with('edit_nama_obat_id', $nama_obat->id);
+            }
+            throw $exception;
+        }
 
         return redirect()
             ->route('nama-obat.index')
@@ -144,11 +183,32 @@ class NamaObatController extends Controller
             ->orderBy('tanggal_kadaluwarsa')
             ->get()
             ->map(function ($item) {
+                // determine days until expiry
+                $today = now()->startOfDay();
+                $expiry = $item->tanggal_kadaluwarsa ? $item->tanggal_kadaluwarsa->startOfDay() : null;
+                $daysUntil = $expiry ? $today->diffInDays($expiry, false) : null;
+
+                // status rules: more than 30 days => available, 30 days or less => not available
+                if (is_null($daysUntil)) {
+                    $statusLabel = ucfirst($item->status ?? 'Tidak diketahui');
+                    $statusClass = 'status-unknown';
+                } else {
+                    if ($daysUntil > 30) {
+                        $statusLabel = 'Tersedia';
+                        $statusClass = 'status-available';
+                    } else {
+                        $statusLabel = 'Tidak tersedia';
+                        $statusClass = 'status-unavailable';
+                    }
+                }
+
                 return [
                     'no_batch' => $item->no_batch,
                     'tanggal_kadaluwarsa' => $item->tanggal_kadaluwarsa ? $item->tanggal_kadaluwarsa->format('d M Y') : '-',
                     'stok' => $item->stok,
-                    'status' => ucfirst($item->status),
+                    'status' => $statusLabel,
+                    'status_class' => $statusClass,
+                    'days_until' => $daysUntil,
                 ];
             });
 
@@ -179,9 +239,49 @@ class NamaObatController extends Controller
         $stokItems = $nama_obat->stokObat()
             ->where('stok', '>', 0)
             ->orderBy('tanggal_kadaluwarsa')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $today = now()->startOfDay();
+                $expiry = $item->tanggal_kadaluwarsa ? $item->tanggal_kadaluwarsa->startOfDay() : null;
+                $daysUntil = $expiry ? $today->diffInDays($expiry, false) : null;
 
-        return response()->json(['stokItems' => $stokItems]);
+                if (is_null($daysUntil)) {
+                    $statusLabel = ucfirst($item->status ?? 'Tidak diketahui');
+                    $statusClass = 'status-unknown';
+                } else {
+                    if ($daysUntil > 30) {
+                        $statusLabel = 'Tersedia';
+                        $statusClass = 'status-available';
+                    } else {
+                        $statusLabel = 'Tidak tersedia';
+                        $statusClass = 'status-unavailable';
+                    }
+                }
+
+                return [
+                    'no_batch' => $item->no_batch,
+                    'tanggal_kadaluwarsa' => $item->tanggal_kadaluwarsa ? $item->tanggal_kadaluwarsa->format('d M Y') : '-',
+                    'stok' => $item->stok,
+                    'status' => $statusLabel,
+                    'status_class' => $statusClass,
+                    'days_until' => $daysUntil,
+                ];
+            });
+
+        return response()->json([
+            'nama_obat' => $nama_obat->nama_obat,
+            'kode_obat' => $nama_obat->kode_obat,
+            'stokItems' => $stokItems,
+        ]);
+    }
+
+    /**
+     * AJAX: generate next kode for a jenis
+     */
+    public function generateKode($jenisId)
+    {
+        $kode = NamaObat::generateKodeForJenis((int)$jenisId);
+        return response()->json(['kode' => $kode]);
     }
 }
 
