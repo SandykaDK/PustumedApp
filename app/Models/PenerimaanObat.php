@@ -23,7 +23,8 @@ class PenerimaanObat extends Model
         static::creating(function ($model) {
             if (empty($model->no_batch)) {
                 $batchPeriod = Carbon::parse($model->tanggal_penerimaan ?? now())->format('Ym');
-                $batchPrefix = 'BATCH-' . $batchPeriod;
+                // Header no_batch uses period YYYYMM without literal prefix to keep it concise
+                $batchPrefix = $batchPeriod;
 
                 $latestBatchNo = static::where('no_batch', 'like', $batchPrefix . '-%')
                     ->orderByDesc('no_batch')
@@ -31,7 +32,7 @@ class PenerimaanObat extends Model
 
                 $nextSequence = 1;
 
-                if ($latestBatchNo && preg_match('/^(?:BATCH-\d{6})-(\d{3})$/', $latestBatchNo, $matches)) {
+                if ($latestBatchNo && preg_match('/^(?:BATCH-)?\d{6}-(\d{3})$/', $latestBatchNo, $matches)) {
                     $nextSequence = ((int) $matches[1]) + 1;
                 }
 
@@ -56,7 +57,8 @@ class PenerimaanObat extends Model
      */
     public function checkUsage()
     {
-        $stokObatIds = StokObat::where('no_batch', $this->no_batch)->pluck('id')->toArray();
+        // consider detail-specific batches that are derived from header no_batch (prefix)
+        $stokObatIds = StokObat::where('no_batch', 'like', $this->no_batch . '%')->pluck('id')->toArray();
 
         if (empty($stokObatIds)) {
             return ['used' => false, 'message' => null];

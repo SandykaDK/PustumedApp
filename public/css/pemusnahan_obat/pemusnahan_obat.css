@@ -144,6 +144,36 @@
     flex-wrap: wrap;
 }
 
+.date-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+}
+
+.date-input-group .date-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.date-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    color: #111827;
+    background: #ffffff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.date-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
 /* Filter Button */
 .btn-filter {
     display: flex;

@@ -49,6 +49,13 @@ class NamaObat extends Model
         return $this->hasMany(StokObat::class, 'nama_obat_id', 'id');
     }
 
+    public function availableStokObat()
+    {
+        return $this->hasMany(StokObat::class, 'nama_obat_id', 'id')
+            ->where('stok', '>', 0)
+            ->where('tanggal_kadaluwarsa', '>', now()->addDays(30));
+    }
+
     public function detailPenerimaanObat()
     {
         return $this->hasMany(DetailPenerimaanObat::class, 'nama_obat_id');

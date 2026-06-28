@@ -131,7 +131,7 @@ body.sidebar-collapsed .container {
     display: grid;
     grid-template-columns: 1fr 1.2fr;
     gap: 14px;
-    align-items: stretch;
+    align-items: start;
     margin-bottom: 16px;
 }
 
@@ -282,7 +282,7 @@ body.sidebar-collapsed .container {
 }
 
 .top-used-card canvas {
-    max-height: 300px;
+    max-height: 220px;
 }
 
 .dashboard-layout .top-used-card {

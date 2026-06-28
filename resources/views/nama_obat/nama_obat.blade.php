@@ -119,7 +119,7 @@
                 </form>
 
                 <!-- BUTTON TAMBAH -->
-                @if(!(auth()->check() && auth()->user()->role === 'petugas_administrasi'))
+                @if(!(auth()->check() && in_array(auth()->user()->role, ['petugas_administrasi', 'kepala_pustu'], true)))
                     <button type="button" id="openCreateModal" class="btn-add">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                             viewBox="0 0 24 24" stroke-width="1.5"
@@ -174,7 +174,7 @@
                                         </svg>
                                     </button>
 
-                                    @unless(auth()->check() && auth()->user()->role === 'petugas_administrasi')
+                                    @unless(auth()->check() && in_array(auth()->user()->role, ['petugas_administrasi', 'kepala_pustu'], true))
                                         <!-- EDIT (open modal) -->
                                         <button type="button"
                                             class="action-btn edit openEditModal"
@@ -336,18 +336,26 @@
                     <form action="{{ route('nama-obat.store') }}" method="POST" class="form-component">
                         @csrf
 
+                        <div class="form-row" style="display:flex;gap:12px;">
+                            <div class="form-group" style="flex:1;">
+                                <label for="create_jenis_obat_id">Jenis Obat</label>
+                                <select id="create_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
+                                    <option value="">Pilih Jenis Obat</option>
+                                    @foreach(($jenisobats ?? []) as $jenis)
+                                        <option value="{{ $jenis->id }}" {{ old('jenis_obat_id') == $jenis->id ? 'selected' : '' }}>{{ $jenis->jenis_obat }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label for="kode_obat">Kode Obat</label>
+                                <input id="kode_obat" type="text" value="{{ old('kode_obat') }}" disabled>
+                                <input type="hidden" id="create_kode_obat_hidden" name="kode_obat" value="{{ old('kode_obat') }}">
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="nama_obat">Nama Obat</label>
                             <input id="nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="create_jenis_obat_id">Jenis Obat</label>
-                            <select id="create_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
-                                <option value="">Pilih Jenis Obat</option>
-                                @foreach(($jenisobats ?? []) as $jenis)
-                                    <option value="{{ $jenis->id }}" {{ old('jenis_obat_id') == $jenis->id ? 'selected' : '' }}>{{ $jenis->jenis_obat }}</option>
-                                @endforeach
-                            </select>
                         </div>
 
                         <div class="form-group">
@@ -359,6 +367,7 @@
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="form-group">
                             <label for="lokasi_penyimpanan">Lokasi Penyimpanan</label>
                             <input id="lokasi_penyimpanan" type="text" name="lokasi_penyimpanan" value="{{ old('lokasi_penyimpanan') }}" required>
@@ -398,19 +407,26 @@
                         @csrf
                         <input type="hidden" name="_method" value="PUT">
 
-                        <div class="form-group">
-                            <label for="edit_nama_obat">Nama Obat</label>
-                            <input id="edit_nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
+                        <div class="form-row" style="display:flex;gap:12px;">
+                            <div class="form-group" style="flex:1;">
+                                <label for="edit_jenis_obat_id">Jenis Obat</label>
+                                <select id="edit_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
+                                    <option value="">Pilih Jenis Obat</option>
+                                    @foreach(($jenisobats ?? []) as $jenis)
+                                        <option value="{{ $jenis->id }}">{{ $jenis->jenis_obat }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label for="edit_kode_obat">Kode Obat</label>
+                                <input id="edit_kode_obat" type="text" value="{{ old('kode_obat') }}" disabled>
+                                <input type="hidden" id="edit_kode_obat_hidden" name="kode_obat" value="{{ old('kode_obat') }}">
+                            </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_jenis_obat_id">Jenis Obat</label>
-                            <select id="edit_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
-                                <option value="">Pilih Jenis Obat</option>
-                                @foreach(($jenisobats ?? []) as $jenis)
-                                    <option value="{{ $jenis->id }}">{{ $jenis->jenis_obat }}</option>
-                                @endforeach
-                            </select>
+                            <label for="edit_nama_obat">Nama Obat</label>
+                            <input id="edit_nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
                         </div>
 
                         <div class="form-group">
@@ -458,6 +474,36 @@
                     placeholder: select.dataset.placeholder || 'Pilih',
                     allowClear: false,
                 });
+                // If this is the jenis select inside the modal, ensure Select2 change updates kode_obat
+                try {
+                    if (select.id === 'create_jenis_obat_id' || select.id === 'edit_jenis_obat_id') {
+                        $select.off('change.kodeHandler').on('change.kodeHandler', function() {
+                            var jenisId = this.value;
+                            if (!jenisId) {
+                                // clear kode fields
+                                var targetVisible = document.getElementById(select.id === 'create_jenis_obat_id' ? 'kode_obat' : 'edit_kode_obat');
+                                var targetHidden = document.getElementById(select.id === 'create_jenis_obat_id' ? 'create_kode_obat_hidden' : 'edit_kode_obat_hidden');
+                                if (targetVisible) targetVisible.value = '';
+                                if (targetHidden) targetHidden.value = '';
+                                return;
+                            }
+                            fetch('/nama-obat/generate-kode/' + jenisId)
+                                .then(function(r) { return r.json(); })
+                                .then(function(d) {
+                                    var kode = d && d.kode ? d.kode : '';
+                                    var targetVisible = document.getElementById(select.id === 'create_jenis_obat_id' ? 'kode_obat' : 'edit_kode_obat');
+                                    var targetHidden = document.getElementById(select.id === 'create_jenis_obat_id' ? 'create_kode_obat_hidden' : 'edit_kode_obat_hidden');
+                                    if (targetVisible) targetVisible.value = kode;
+                                    if (targetHidden) targetHidden.value = kode;
+                                })
+                                .catch(function() {
+                                    // noop
+                                });
+                        });
+                    }
+                } catch (err) {
+                    console.error('initModalSelect2 kode handler error:', err);
+                }
             });
         }
 
@@ -557,8 +603,10 @@
             try {
                 editForm.action = '/nama-obat/' + data.id;
                 const kodeEl = document.getElementById('edit_kode_obat');
+                const kodeHiddenEl = document.getElementById('edit_kode_obat_hidden');
                 const namaEl = document.getElementById('edit_nama_obat');
                 if (kodeEl) kodeEl.value = data.kode_obat || '';
+                if (kodeHiddenEl) kodeHiddenEl.value = data.kode_obat || '';
                 if (namaEl) namaEl.value = data.nama_obat || '';
 
                 const jenisSelect = document.getElementById('edit_jenis_obat_id');
@@ -626,7 +674,12 @@
                 }
 
                 if (oldInput && Object.keys(oldInput).length) {
-                    if (oldInput.kode_obat) document.getElementById('edit_kode_obat').value = oldInput.kode_obat;
+                    if (oldInput.kode_obat) {
+                        const ek = document.getElementById('edit_kode_obat');
+                        const ekh = document.getElementById('edit_kode_obat_hidden');
+                        if (ek) ek.value = oldInput.kode_obat;
+                        if (ekh) ekh.value = oldInput.kode_obat;
+                    }
                     if (oldInput.nama_obat) document.getElementById('edit_nama_obat').value = oldInput.nama_obat;
                     if (oldInput.jenis_obat_id) {
                         const oldJenis = document.getElementById('edit_jenis_obat_id');
@@ -654,8 +707,10 @@
         (function() {
             const createJenis = document.getElementById('create_jenis_obat_id');
             const createKode = document.getElementById('kode_obat');
+            const createKodeHidden = document.getElementById('create_kode_obat_hidden');
             const editJenis = document.getElementById('edit_jenis_obat_id');
             const editKode = document.getElementById('edit_kode_obat');
+            const editKodeHidden = document.getElementById('edit_kode_obat_hidden');
 
             function fetchKode(jenisId, cb) {
                 if (!jenisId) { cb(''); return; }
@@ -666,19 +721,37 @@
             }
 
             if (createJenis && createKode) {
+                // native listener (covers non-Select2 cases)
                 createJenis.addEventListener('change', function() {
-                    fetchKode(this.value, function(k) { createKode.value = k; });
+                    fetchKode(this.value, function(k) { createKode.value = k; if (createKodeHidden) createKodeHidden.value = k; });
                 });
+
+                // If Select2 is active, also bind via jQuery to ensure event coverage
+                if (window.jQuery && jQuery(createJenis).data('select2')) {
+                    jQuery(createJenis).on('change', function() {
+                        fetchKode(this.value, function(k) { createKode.value = k; if (createKodeHidden) createKodeHidden.value = k; });
+                    });
+                }
+
                 // if there's an initial value (old input), trigger to fill kode
                 document.addEventListener('DOMContentLoaded', function() {
-                    if (createJenis.value) createJenis.dispatchEvent(new Event('change'));
+                    if (createJenis.value) {
+                        // prefer fetch to get fresh kode
+                        fetchKode(createJenis.value, function(k) { createKode.value = k; if (createKodeHidden) createKodeHidden.value = k; });
+                    }
                 });
             }
 
             if (editJenis && editKode) {
                 editJenis.addEventListener('change', function() {
-                    fetchKode(this.value, function(k) { editKode.value = k; });
+                    fetchKode(this.value, function(k) { editKode.value = k; if (editKodeHidden) editKodeHidden.value = k; });
                 });
+
+                if (window.jQuery && jQuery(editJenis).data('select2')) {
+                    jQuery(editJenis).on('change', function() {
+                        fetchKode(this.value, function(k) { editKode.value = k; if (editKodeHidden) editKodeHidden.value = k; });
+                    });
+                }
             }
         })();
 
@@ -709,7 +782,7 @@
                 .then(response => response.json())
                 .then(data => {
                     const titleEl = document.getElementById('stockModalTitle');
-                    titleEl.textContent = data.nama_obat;
+                    titleEl.textContent = `Rincian Stok - ${data.nama_obat}`;
 
                     if (data.stokItems.length === 0) {
                         contentDiv.innerHTML = '<p style="text-align: center; color: #9ca3af;">Belum ada data stok untuk obat ini.</p>';

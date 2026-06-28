@@ -112,9 +112,10 @@
 }
 
 .dokter-table td {
-    padding: 10px 0;
+    padding: 6px 0;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
+    line-height: 1.3;
 }
 
 .dokter-table tr:last-child td {

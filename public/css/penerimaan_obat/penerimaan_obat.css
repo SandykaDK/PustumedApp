@@ -35,9 +35,10 @@
 }
 
 .penerimaan-obat-table td {
-    padding: 14px 0;
+    padding: 6px 0;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
+    line-height: 1.3;
 }
 
 .penerimaan-obat-table tr:last-child td {

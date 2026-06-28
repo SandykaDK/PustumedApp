@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Models\StokObat;
+use Carbon\Carbon;
 
 class PenerimaanObatController extends Controller
 {
@@ -124,21 +125,24 @@ class PenerimaanObatController extends Controller
             // Create detail records and update stok_obat accordingly
             if ($request->has('details')) {
                 foreach ($request->details as $detail) {
+                    // Generate a detail-specific batch identifier using header batch + expiry date
+                    $detailBatch = $penerimaan->no_batch . '-' . Carbon::parse($detail['tanggal_kadaluwarsa'])->format('Ymd');
+
                     $created = DetailPenerimaanObat::create([
                         'penerimaan_obat_id' => $penerimaan->id,
                         'nama_obat_id' => $detail['nama_obat_id'],
                         'jenis_obat_id' => $detail['jenis_obat_id'],
-                        'no_batch' => $penerimaan->no_batch,
+                        'no_batch' => $detailBatch,
                         'tanggal_kadaluwarsa' => $detail['tanggal_kadaluwarsa'],
                         'jumlah_masuk' => $detail['jumlah_masuk'],
                         'satuan_id' => $detail['satuan_id'],
                         'lokasi_penyimpanan' => $detail['lokasi_penyimpanan'],
                     ]);
 
-                    // Update stok_obat: upsert by nama_obat_id + tanggal_kadaluwarsa + no_batch
+                    // Update stok_obat: upsert by nama_obat_id + tanggal_kadaluwarsa + detail-specific no_batch
                     $stokRow = StokObat::where('nama_obat_id', $detail['nama_obat_id'])
                         ->where('tanggal_kadaluwarsa', $detail['tanggal_kadaluwarsa'])
-                        ->where('no_batch', $penerimaan->no_batch)
+                        ->where('no_batch', $detailBatch)
                         ->first();
 
                     if ($stokRow) {
@@ -148,7 +152,7 @@ class PenerimaanObatController extends Controller
                             'nama_obat_id' => $detail['nama_obat_id'],
                             'tanggal_kadaluwarsa' => $detail['tanggal_kadaluwarsa'],
                             'stok' => $detail['jumlah_masuk'],
-                            'no_batch' => $penerimaan->no_batch,
+                            'no_batch' => $detailBatch,
                             'keterangan' => null,
                         ]);
                     }
@@ -203,9 +207,10 @@ class PenerimaanObatController extends Controller
             // Reverse stock for existing details
             $oldDetails = $penerimaan_obat->detailPenerimaanObat()->get();
             foreach ($oldDetails as $old) {
+                // Use the detail's own no_batch when reversing stock
                 $stokRow = StokObat::where('nama_obat_id', $old->nama_obat_id)
                     ->where('tanggal_kadaluwarsa', $old->tanggal_kadaluwarsa)
-                    ->where('no_batch', $penerimaan_obat->no_batch)
+                    ->where('no_batch', $old->no_batch)
                     ->first();
 
                 if ($stokRow) {
@@ -228,11 +233,14 @@ class PenerimaanObatController extends Controller
             // Create new details and apply stock increments
             if ($request->has('details')) {
                 foreach ($request->details as $detail) {
+                    // Generate detail-specific batch
+                    $detailBatch = $penerimaan_obat->no_batch . '-' . Carbon::parse($detail['tanggal_kadaluwarsa'])->format('Ymd');
+
                     DetailPenerimaanObat::create([
                         'penerimaan_obat_id' => $penerimaan_obat->id,
                         'nama_obat_id' => $detail['nama_obat_id'],
                         'jenis_obat_id' => $detail['jenis_obat_id'],
-                        'no_batch' => $penerimaan_obat->no_batch,
+                        'no_batch' => $detailBatch,
                         'tanggal_kadaluwarsa' => $detail['tanggal_kadaluwarsa'],
                         'jumlah_masuk' => $detail['jumlah_masuk'],
                         'satuan_id' => $detail['satuan_id'],
@@ -241,7 +249,7 @@ class PenerimaanObatController extends Controller
 
                     $stokRow = StokObat::where('nama_obat_id', $detail['nama_obat_id'])
                         ->where('tanggal_kadaluwarsa', $detail['tanggal_kadaluwarsa'])
-                        ->where('no_batch', $penerimaan_obat->no_batch)
+                        ->where('no_batch', $detailBatch)
                         ->first();
 
                     if ($stokRow) {
@@ -251,7 +259,7 @@ class PenerimaanObatController extends Controller
                             'nama_obat_id' => $detail['nama_obat_id'],
                             'tanggal_kadaluwarsa' => $detail['tanggal_kadaluwarsa'],
                             'stok' => $detail['jumlah_masuk'],
-                            'no_batch' => $penerimaan_obat->no_batch,
+                            'no_batch' => $detailBatch,
                             'keterangan' => null,
                         ]);
                     }
@@ -277,9 +285,10 @@ class PenerimaanObatController extends Controller
         DB::transaction(function () use ($penerimaan_obat) {
             $details = $penerimaan_obat->detailPenerimaanObat()->get();
             foreach ($details as $detail) {
+                // Use the detail's stored no_batch when reversing stock
                 $stokRow = StokObat::where('nama_obat_id', $detail->nama_obat_id)
                     ->where('tanggal_kadaluwarsa', $detail->tanggal_kadaluwarsa)
-                    ->where('no_batch', $penerimaan_obat->no_batch)
+                    ->where('no_batch', $detail->no_batch)
                     ->first();
 
                 if ($stokRow) {

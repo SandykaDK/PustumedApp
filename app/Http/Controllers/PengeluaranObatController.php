@@ -427,7 +427,21 @@ class PengeluaranObatController extends Controller
             'detailPengeluaranObat.satuan'
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('pengeluaran_obat.print_pdf', compact('pengeluaran'));
+        $detailItems = $pengeluaran->detailPengeluaranObat
+            ->groupBy(function ($detail) {
+                return $detail->nama_obat_id . '_' . $detail->satuan_id;
+            })
+            ->map(function ($group) {
+                $first = $group->first();
+                return (object) [
+                    'namaObat' => $first->namaObat,
+                    'satuan' => $first->satuan,
+                    'jumlah_keluar' => $group->sum('jumlah_keluar'),
+                ];
+            })
+            ->values();
+
+        $pdf = Pdf::loadView('pengeluaran_obat.print_pdf', compact('pengeluaran', 'detailItems'));
 
         // Set paper size to A5 (resep size) and margins
         $pdf->setPaper('a5', 'portrait');

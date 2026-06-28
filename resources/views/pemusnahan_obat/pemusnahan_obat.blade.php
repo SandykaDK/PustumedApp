@@ -41,6 +41,10 @@
                                 </span>
                                 <input type="text" name="search" class="search-input" placeholder="Cari nama obat..." value="{{ $search }}">
                             </div>
+                            <div class="date-input-group month-filter-field" style="display:none;">
+                                <label for="bulan_pemusnahan" class="date-label">Bulan Pemusnahan</label>
+                                <input type="month" name="bulan_pemusnahan" id="bulan_pemusnahan" class="date-input" value="{{ request('bulan_pemusnahan', now()->format('Y-m')) }}" {{ ($activeTab ?? '') !== 'sudah_dimusnahkan' ? 'disabled' : '' }}>
+                            </div>
                             <a href="{{ route('pemusnahan-obat.index') }}" class="btn-filter btn-reset">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.995-1.465" />
@@ -1482,6 +1486,45 @@
         renderTab(this.dataset.tab);
     }));
 
+    function toggleMonthFilter(tabKey) {
+        const monthFilter = document.querySelector('.month-filter-field');
+        if (!monthFilter) return;
+        const monthInput = monthFilter.querySelector('input[name="bulan_pemusnahan"]');
+        if (tabKey === 'sudah_dimusnahkan') {
+            monthFilter.style.display = 'flex';
+            if (monthInput) monthInput.removeAttribute('disabled');
+        } else {
+            monthFilter.style.display = 'none';
+            if (monthInput) monthInput.setAttribute('disabled', 'disabled');
+        }
+    }
+
+    function renderTab(tabKey) {
+        const tabInput = document.getElementById('currentTabInput');
+        if (tabInput) {
+            tabInput.value = tabKey;
+        }
+        const tpl = document.getElementById('tpl-' + tabKey);
+        const container = document.getElementById('mainTableContainer');
+        if (!tpl || !container) return;
+        container.innerHTML = tpl.innerHTML;
+        attachTableListeners();
+        toggleMonthFilter(tabKey);
+        // localize any server-rendered ISO timestamps into client-local display
+        (function localizeRenderedDates() {
+            container.querySelectorAll('.local-dt').forEach(el => {
+                const iso = el.dataset.iso;
+                const fmt = el.dataset.format || 'datetime';
+                if (!iso) return;
+                try {
+                    if (fmt === 'date') el.textContent = formatDateISO(iso);
+                    else el.textContent = formatDateTimeISO(iso);
+                } catch (e) { /* ignore */ }
+            });
+        })();
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabKey));
+    }
+
     // render default on load
     renderTab(defaultTab);
 
@@ -1528,6 +1571,8 @@
             filterDebounceTimer = setTimeout(submitFilter, delay);
         };
 
+        const monthField = filterForm.querySelector('input[name="bulan_pemusnahan"]');
+
         if (searchField) {
             searchField.addEventListener('input', function() {
                 submitFilterDebounced(500);
@@ -1538,6 +1583,12 @@
                     e.preventDefault();
                     submitFilterDebounced(0);
                 }
+            });
+        }
+
+        if (monthField) {
+            monthField.addEventListener('change', function() {
+                submitFilterDebounced(0);
             });
         }
     }

@@ -386,7 +386,6 @@ class DashboardController extends Controller
                     'sort_at' => now()->subMinutes(1),
                 ],
             ]))
-            ->merge($pemusnahanApprovalList)
             ->sortByDesc(function ($item) {
                 return optional(data_get($item, 'sort_at'))->timestamp ?? 0;
             })

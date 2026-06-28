@@ -11,6 +11,15 @@ use App\Models\SatuanObat;
 
 class NamaObatController extends Controller
 {
+    private function blockManagementForRestrictedRoles()
+    {
+        if (auth()->check() && auth()->user()?->role === 'kepala_pustu') {
+            return redirect()->route('nama-obat.index')->with('error', 'Anda tidak memiliki akses untuk mengubah daftar obat.');
+        }
+
+        return null;
+    }
+
     public function index(Request $request)
     {
         $search = $request->search;
@@ -34,7 +43,7 @@ class NamaObatController extends Controller
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
         $namaobats = NamaObat::with(['jenisObat', 'satuanObat'])
-            ->withSum('stokObat as total_stok', 'stok')
+            ->withSum('availableStokObat as total_stok', 'stok')
             ->withCount([
                 'detailPenerimaanObat',
                 'detailPengeluaranObat',
@@ -77,11 +86,21 @@ class NamaObatController extends Controller
 
     public function create()
     {
+        $blocked = $this->blockManagementForRestrictedRoles();
+        if ($blocked) {
+            return $blocked;
+        }
+
         return view('nama_obat.create_nama_obat');
     }
 
     public function store(Request $request)
     {
+        $blocked = $this->blockManagementForRestrictedRoles();
+        if ($blocked) {
+            return $blocked;
+        }
+
         $validator = Validator::make($request->all(), [
             'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat',
             'jenis_obat_id'  => 'required|exists:jenis_obat,id',
@@ -124,11 +143,20 @@ class NamaObatController extends Controller
 
     public function edit(NamaObat $nama_obat)
     {
+        $blocked = $this->blockManagementForRestrictedRoles();
+        if ($blocked) {
+            return $blocked;
+        }
+
         return view('nama_obat.edit_nama_obat', compact('nama_obat'));
     }
 
     public function update(Request $request, NamaObat $nama_obat)
     {
+        $blocked = $this->blockManagementForRestrictedRoles();
+        if ($blocked) {
+            return $blocked;
+        }
 
         $validator = Validator::make($request->all(), [
             'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat,' . $nama_obat->id,
@@ -221,6 +249,11 @@ class NamaObatController extends Controller
 
     public function destroy(NamaObat $nama_obat)
     {
+        $blocked = $this->blockManagementForRestrictedRoles();
+        if ($blocked) {
+            return $blocked;
+        }
+
         if ($nama_obat->isInUse()) {
             return redirect()
                 ->route('nama-obat.index')

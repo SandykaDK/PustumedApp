@@ -314,7 +314,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($pengeluaran->detailPengeluaranObat as $index => $detail)
+                    @php
+                        $items = $detailItems ?? $pengeluaran->detailPengeluaranObat;
+                    @endphp
+                    @forelse($items as $index => $detail)
                         <tr>
                             <td class="col-no">{{ $index + 1 }}</td>
                             <td class="col-name">{{ $detail->namaObat->nama_obat ?? '-' }}</td>

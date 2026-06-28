@@ -480,10 +480,7 @@
                     <input type="number" ${isExisting ? 'readonly' : ''} name="details[${index}][jumlah_keluar]" class="table-input jumlah-keluar-input" data-detail-index="${index}" min="1" value="${data.jumlah_keluar || ''}" ${isExisting ? '' : 'required'}>
                 </td>
                 <td>
-                    <select disabled class="table-input tanggal-kadaluwarsa-select" data-detail-index="${index}" data-stok-obat-id="${data.stok_obat_id || ''}">
-                        <option value="">Pilih Tanggal</option>
-                        ${data.stok_obat_id ? `<option value="${data.stok_obat_id}" selected>${data.stok_obat && data.stok_obat.tanggal_kadaluwarsa ? data.stok_obat.tanggal_kadaluwarsa : data.tanggal_kadaluwarsa || data.stok_obat_id}</option>` : ''}
-                    </select>
+                    <input type="text" readonly class="table-input tanggal-kadaluwarsa-display" data-detail-index="${index}" value="${data.tanggal_kadaluwarsa || ''}">
                     <input type="hidden" name="details[${index}][stok_obat_id]" class="stok-obat-hidden" data-detail-index="${index}" value="${data.stok_obat_id || ''}">
                 </td>
                 <td>
@@ -644,8 +641,8 @@
             // Plain select behavior: attach change listeners to nama obat selects
             document.querySelectorAll('.nama-obat-select').forEach(select => {
                 const detailIndex = select.dataset.detailIndex;
-                const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
-                const storedStokObatId = stokSelect ? stokSelect.dataset.stokObatId : null;
+                const tanggalDisplay = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
+                const storedStokObatId = tanggalDisplay ? tanggalDisplay.dataset.stokObatId : null;
                 console.log(`DEBUG attachNameObatListeners: detailIndex=${detailIndex}, nama_obat_id=${select.value}, data-stok-obat-id=${storedStokObatId}`);
 
                 // destroy previous select2 instance if any
@@ -681,11 +678,7 @@
             // Attach pasien select listeners
             attachPasienListeners();
 
-            // Attach change listener directly to all .tanggal-kadaluwarsa-select elements
-            document.querySelectorAll('.tanggal-kadaluwarsa-select').forEach(select => {
-                select.removeEventListener('change', handleStokObatChange);
-                select.addEventListener('change', handleStokObatChange);
-            });
+            // No change listeners for tanggal kadaluwarsa: it's display-only now
 
             // Attach input listener directly to all .jumlah-keluar-input elements
             document.querySelectorAll('.jumlah-keluar-input').forEach(input => {
@@ -702,12 +695,12 @@
                 // debounce helper
                 const debounce = (fn, ms = 250) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; };
 
-                const onInput = debounce(function(e) {
+                const onInput = debounce(async function(e) {
                     const detailIndex = e.target.dataset.detailIndex;
                     // attempt auto-allocation across stok entries for this nama obat
-                    try { autoAllocateForDetail(detailIndex); } catch (err) { console.error('allocation error', err); }
+                    try { await autoAllocateForDetail(detailIndex); } catch (err) { console.error('allocation error', err); }
 
-                    const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
+                    const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
                     if (stokSelect) {
                         const stokValue = stokSelect.dataset.stokValue || 0;
                         validateJumlahKeluar(e.target, stokValue);
@@ -734,22 +727,33 @@
         function handleNameObatChange(e) {
             console.log('DEBUG: handleNameObatChange event', e);
             const select = e.target || e.currentTarget || (e && e.srcElement) || null;
-            const namaObatId = select.value;
-            const detailIndex = select.dataset.detailIndex;
+            // If the select was set programmatically for an auto-allocation row,
+            // a temporary flag `_pustumed_silent` will be present to indicate
+            // the handler should ignore this change. Clear the flag and return.
+            try {
+                if (select && select._pustumed_silent) {
+                    select._pustumed_silent = false;
+                    return;
+                }
+            } catch (err) {}
+            const namaObatId = select ? select.value : '';
+            const detailIndex = select ? select.dataset.detailIndex : '';
             console.log('DEBUG: selected namaObatId=', namaObatId, 'detailIndex=', detailIndex);
-            const tanggalKadaluwarsaSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
+
+            const tanggalDisplay = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
             const satuanDisplay = document.querySelector(`.satuan-display[data-detail-index="${detailIndex}"]`);
             const satuanHidden = document.querySelector(`input[name="details[${detailIndex}][satuan_id]"]`);
             const lokasiInput = document.querySelector(`input[name="details[${detailIndex}][lokasi_penyimpanan]"]`);
             const isEdit = (typeof isEditMode !== 'undefined' && isEditMode);
-            const storedStokObatId = tanggalKadaluwarsaSelect ? tanggalKadaluwarsaSelect.dataset.stokObatId : null;
 
-            console.log('DEBUG: tanggalKadaluwarsaSelect found?', !!tanggalKadaluwarsaSelect, 'storedStokObatId=', storedStokObatId);
+            console.log('DEBUG: tanggalDisplay found?', !!tanggalDisplay);
 
-            // clear previous stok options
-            if (tanggalKadaluwarsaSelect) {
-                tanggalKadaluwarsaSelect.innerHTML = '<option value="">Pilih Tanggal</option>';
-                tanggalKadaluwarsaSelect.dataset.stokValue = 0;
+            // clear previous tanggal display
+            if (tanggalDisplay) {
+                tanggalDisplay.value = '';
+                tanggalDisplay.dataset.stokValue = 0;
+                tanggalDisplay.dataset.stokObatId = '';
+                tanggalDisplay.dataset.daysUntilExpiry = '';
             }
 
             if (!namaObatId) {
@@ -772,79 +776,72 @@
                 })
                 .catch(err => console.error('Error fetching nama obat detail:', err))
                 .finally(() => {
-                    // Fetch stok data
-                    if (!tanggalKadaluwarsaSelect) {
-                        console.log('DEBUG: tanggalKadaluwarsaSelect is null, cannot fetch stok');
+                    // Fetch stok data and set readonly display
+                    if (!tanggalDisplay) {
+                        console.log('DEBUG: tanggalDisplay is null, cannot fetch stok');
                         return;
                     }
+
                     fetch(`/pengeluaran-obat/stok/${namaObatId}`)
                         .then(response => response.json())
-                        .then(data => {
-                            console.log('DEBUG: stok data for namaObatId=', namaObatId, 'data=', data);
-                            if (!Array.isArray(data)) {
-                                console.warn('DEBUG: stok data is not an array', data);
-                                return;
+                        .then(originalData => {
+                            console.log('DEBUG: stok data for namaObatId=', namaObatId, 'data=', originalData);
+
+                            // Handle response - might be wrapped in object
+                            let data = originalData;
+                            if (!Array.isArray(data) && data && typeof data === 'object') {
+                                if (Array.isArray(data.data)) data = data.data;
+                                else if (Array.isArray(data.stoks)) data = data.stoks;
+                                else {
+                                    const values = Object.values(data);
+                                    if (Array.isArray(values) && values[0] && values[0].id) data = values;
+                                }
                             }
 
-                            if (data.length === 0) {
+                            if (!Array.isArray(data) || data.length === 0) {
                                 console.warn('DEBUG: no stok entries returned for', namaObatId);
                                 return;
                             }
 
-                            // Ensure safe stock is shown first in the dropdown when possible.
-                            data.sort((a, b) => {
-                                const aSafe = parseInt(a.days_until_expiry, 10) > 30 ? 0 : 1;
-                                const bSafe = parseInt(b.days_until_expiry, 10) > 30 ? 0 : 1;
-                                if (aSafe !== bSafe) return aSafe - bSafe;
-                                return new Date(a.tanggal_kadaluwarsa_iso) - new Date(b.tanggal_kadaluwarsa_iso);
-                            });
+                            // Prefer safe stocks (>30 days) but fallback to available stocks
+                            const available = data.filter(s => parseInt(s.stok || 0, 10) > 0);
+                            let firstStok = null;
+                            if (available.length > 0) {
+                                const safe = available.filter(s => parseInt(s.days_until_expiry || 0, 10) > 30);
+                                if (safe.length > 0) firstStok = safe[0];
+                                else firstStok = available.reduce((best, s) => (parseInt(s.stok || 0, 10) > parseInt(best.stok || 0, 10) ? s : best), available[0]);
+                            } else {
+                                firstStok = data[0];
+                            }
 
-                            console.log('DEBUG: processing', data.length, 'stok entries');
-                            data.forEach((stok, idx) => {
-                                console.log(`DEBUG: stok[${idx}]:`, { id: stok.id, display: stok.display, stok_qty: stok.stok, days: stok.days_until_expiry });
-                                const option = document.createElement('option');
-                                option.value = stok.id;
-                                if (isEdit && storedStokObatId && storedStokObatId == stok.id) {
-                                    option.textContent = stok.tanggal_kadaluwarsa;
-                                } else {
-                                    option.textContent = stok.display || stok.tanggal_kadaluwarsa || '';
-                                }
-                                option.dataset.stok = stok.stok;
-                                option.dataset.daysUntilExpiry = stok.days_until_expiry;
-                                if (storedStokObatId && storedStokObatId == stok.id) {
-                                    option.selected = true;
-                                    tanggalKadaluwarsaSelect.dataset.stokValue = stok.stok;
-                                    tanggalKadaluwarsaSelect.value = stok.id;
-                                    const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
-                                    if (stokHidden) stokHidden.value = stok.id;
-                                    console.log('DEBUG: marked stok option as selected, id=', stok.id);
-                                } else {
-                                    console.log(`DEBUG: stok id ${stok.id} does not match storedStokObatId ${storedStokObatId}`);
-                                }
-                                tanggalKadaluwarsaSelect.appendChild(option);
-                            });
+                            if (firstStok) {
+                                const tanggal = firstStok.display || firstStok.tanggal_kadaluwarsa || '';
+                                tanggalDisplay.value = tanggal;
+                                tanggalDisplay.dataset.stokValue = firstStok.stok || 0;
+                                tanggalDisplay.dataset.stokObatId = firstStok.id;
+                                tanggalDisplay.dataset.daysUntilExpiry = firstStok.days_until_expiry || 0;
 
-                            console.log('DEBUG: finished populating', tanggalKadaluwarsaSelect.options.length, 'options');
+                                const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
+                                if (stokHidden) stokHidden.value = firstStok.id;
 
-                            // Check if all available stoks are near expiry
+                                console.log(`DEBUG: populated tanggal_kadaluwarsa="${tanggal}", stokValue=${firstStok.stok}, stok_obat_id=${firstStok.id}`);
+                            }
+
                             checkNearExpiryWarning(data, detailIndex);
-
-                            const changeEvent = new Event('change', { bubbles: true });
-                            tanggalKadaluwarsaSelect.dispatchEvent(changeEvent);
+                            console.log('DEBUG: finished setting readonly tanggal-kadaluwarsa display');
                         })
-                        .catch(error => console.error('Error fetching stok:', error));
+                        .catch(err => console.error('Error fetching stok:', err));
                 });
         }
 
         function getDetailStockOptions(detailIndex) {
-            const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
-            if (!stokSelect) return [];
-            return Array.from(stokSelect.options)
-                .map(opt => ({
-                    stok: parseInt(opt.dataset.stok, 10) || 0,
-                    days_until_expiry: opt.dataset.daysUntilExpiry !== undefined ? parseInt(opt.dataset.daysUntilExpiry, 10) : NaN
-                }))
-                .filter(s => s.stok > 0 && !Number.isNaN(s.days_until_expiry));
+            // For readonly display, we only have a single stok value on the display element
+            const tanggalDisplay = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
+            if (!tanggalDisplay) return [];
+            const stok = parseInt(tanggalDisplay.dataset.stokValue || 0, 10) || 0;
+            const days = parseInt(tanggalDisplay.dataset.daysUntilExpiry || '0', 10) || 0;
+            if (stok <= 0) return [];
+            return [{ stok: stok, days_until_expiry: days }];
         }
 
         function isDetailAllStockNearExpiry(detailIndex) {
@@ -885,9 +882,15 @@
 
         function handleStokObatChange(e) {
             const stokSelect = e.target;
-            const selectedOption = stokSelect.options[stokSelect.selectedIndex];
-            const stokValue = selectedOption.dataset.stok || 0;
+            const selectedIdx = stokSelect.selectedIndex;
+            const selectedOption = stokSelect.options[selectedIdx];
+
+            console.log('DEBUG handleStokObatChange: selectedIndex=', selectedIdx, 'option=', selectedOption ? {value: selectedOption.value, text: selectedOption.text, stok: selectedOption.dataset.stok} : null);
+
+            const stokValue = selectedOption ? selectedOption.dataset.stok : 0;
             stokSelect.dataset.stokValue = stokValue;
+
+            console.log('DEBUG: set stokValue to', stokValue);
 
             const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${stokSelect.dataset.detailIndex}"]`);
             if (stokHidden && selectedOption) {
@@ -898,6 +901,7 @@
             const detailIndex = stokSelect.dataset.detailIndex;
             const jumlahInput = document.querySelector(`input[name="details[${detailIndex}][jumlah_keluar]"]`);
             if (jumlahInput && jumlahInput.value) {
+                console.log('DEBUG: validating jumlahInput, value=', jumlahInput.value, 'stokValue=', stokValue);
                 validateJumlahKeluar(jumlahInput, stokValue);
             }
 
@@ -906,7 +910,27 @@
             if (namaSelect && namaSelect.value) {
                 fetch(`/pengeluaran-obat/stok/${namaSelect.value}`)
                     .then(response => response.json())
-                    .then(data => {
+                    .then(originalData => {
+                        // Handle response - might be wrapped in object
+                        let data = originalData;
+                        if (!Array.isArray(data)) {
+                            if (data && typeof data === 'object') {
+                                if (Array.isArray(data.data)) {
+                                    data = data.data;
+                                } else if (Array.isArray(data.stoks)) {
+                                    data = data.stoks;
+                                } else {
+                                    const values = Object.values(data);
+                                    if (Array.isArray(values) && values.length > 0 && typeof values[0] === 'object' && values[0].id) {
+                                        data = values;
+                                    } else {
+                                        return;
+                                    }
+                                }
+                            } else {
+                                return;
+                            }
+                        }
                         checkNearExpiryWarning(data, detailIndex);
                     })
                     .catch(err => console.error('Error checking expiry warning:', err));
@@ -977,7 +1001,23 @@
             let stoks = [];
             try {
                 const res = await fetch(`/pengeluaran-obat/stok/${namaObatId}`);
-                stoks = await res.json();
+                const originalStoks = await res.json();
+
+                // Handle response - might be wrapped in object
+                if (Array.isArray(originalStoks)) {
+                    stoks = originalStoks;
+                } else if (originalStoks && typeof originalStoks === 'object') {
+                    if (Array.isArray(originalStoks.data)) {
+                        stoks = originalStoks.data;
+                    } else if (Array.isArray(originalStoks.stoks)) {
+                        stoks = originalStoks.stoks;
+                    } else {
+                        const values = Object.values(originalStoks);
+                        if (Array.isArray(values) && values.length > 0 && typeof values[0] === 'object' && values[0].id) {
+                            stoks = values;
+                        }
+                    }
+                }
             } catch (err) {
                 console.error('Failed to fetch stok for allocation', err);
                 return;
@@ -990,8 +1030,9 @@
 
             // Use only safe stocks (>30 days) for allocation.
             // If requested qty exceeds safe stock, do not fall back to near-expiry batches.
-            const safeStocks = stoks.filter(s => parseInt(s.days_until_expiry, 10) > 30);
-            const pool = safeStocks;
+            const safeStocks = stoks.filter(s => parseInt(s.days_until_expiry, 10) > 30 && parseInt(s.stok || 0, 10) > 0);
+            const allAvailableStocks = stoks.filter(s => parseInt(s.stok || 0, 10) > 0);  // All stocks with qty > 0
+            const pool = safeStocks.length > 0 ? safeStocks : allAvailableStocks;  // Fallback to all available if no safe
 
             let remaining = requested;
             const allocations = [];
@@ -1009,21 +1050,31 @@
             // If no safe allocation is possible (e.g. all stok near expiry),
             // keep one tanggal kadaluwarsa visible in the table for user context.
             if (allocations.length === 0 && stoks.length > 0) {
-                const firstAvailable = stoks[0];
-                const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
-                const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
+                // Pick the stok with highest qty available (not the first one which might be empty)
+                let bestStok = stoks[0];
+                for (const s of stoks) {
+                    const currentQty = parseInt(s.stok || 0, 10);
+                    const bestQty = parseInt(bestStok.stok || 0, 10);
+                    if (currentQty > bestQty) {
+                        bestStok = s;
+                    }
+                }
 
-                if (stokSelect) {
-                    stokSelect.value = String(firstAvailable.id);
-                    stokSelect.dataset.stokValue = parseInt(firstAvailable.stok || 0, 10);
-                    stokSelect.dataset.stokObatId = firstAvailable.id;
+                const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
+                const tanggalDisplay = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
+
+                if (tanggalDisplay) {
+                    tanggalDisplay.value = bestStok.display || bestStok.tanggal_kadaluwarsa || '';
+                    tanggalDisplay.dataset.stokValue = parseInt(bestStok.stok || 0, 10);
+                    tanggalDisplay.dataset.stokObatId = bestStok.id;
+                    tanggalDisplay.dataset.daysUntilExpiry = bestStok.days_until_expiry;
                 }
 
                 if (stokHidden) {
-                    stokHidden.value = firstAvailable.id;
+                    stokHidden.value = bestStok.id;
                 }
 
-                validateJumlahKeluar(jumlahInput, firstAvailable.stok);
+                validateJumlahKeluar(jumlahInput, bestStok.stok);
                 return;
             }
 
@@ -1032,18 +1083,12 @@
                 const first = allocations[0];
                 // set hidden stok id and stok select display
                 const stokHidden = document.querySelector(`.stok-obat-hidden[data-detail-index="${detailIndex}"]`);
-                const stokSelect = document.querySelector(`.tanggal-kadaluwarsa-select[data-detail-index="${detailIndex}"]`);
-                if (stokSelect) {
-                    stokSelect.innerHTML = '';
-                    const opt = document.createElement('option');
-                    opt.value = first.stokId;
-                    opt.textContent = first.display || first.iso || '';
-                    opt.dataset.stok = first.qty;
-                    opt.dataset.daysUntilExpiry = first.daysUntilExpiry;
-                    stokSelect.appendChild(opt);
-                    stokSelect.dataset.stokValue = first.qty;
-                    stokSelect.dataset.stokObatId = first.stokId;
-                    stokSelect.value = first.stokId;
+                const tanggalDisplay = document.querySelector(`.tanggal-kadaluwarsa-display[data-detail-index="${detailIndex}"]`);
+                if (tanggalDisplay) {
+                    tanggalDisplay.value = first.display || first.iso || '';
+                    tanggalDisplay.dataset.stokValue = first.qty;
+                    tanggalDisplay.dataset.stokObatId = first.stokId;
+                    tanggalDisplay.dataset.daysUntilExpiry = first.daysUntilExpiry;
                 }
                 if (stokHidden) stokHidden.value = first.stokId;
 
@@ -1109,30 +1154,32 @@
                     // populate the nama select & trigger change to populate satuan/hidden fields
                     const insertedNama = insertedRow.querySelector('.nama-obat-select');
                     if (insertedNama) {
-                        insertedNama.value = namaObatId;
-                        if (window.jQuery && jQuery(insertedNama).hasClass('select2-hidden-accessible')) {
-                            try {
+                        // Mark as silent so our change handler will skip the programmatic change
+                        try {
+                            insertedNama._pustumed_silent = true;
+                            if (window.jQuery && jQuery(insertedNama).hasClass('select2-hidden-accessible')) {
+                                // set value and trigger change so Select2 updates visually,
+                                // but the handler will ignore it because of the flag above.
                                 jQuery(insertedNama).val(String(namaObatId)).trigger('change');
-                            } catch (err) {
-                                console.warn('Warning setting inserted nama obat select value with select2', err);
+                            } else {
+                                // native select: set value then dispatch change
+                                insertedNama.value = namaObatId;
+                                const evt = new Event('change', { bubbles: true });
+                                insertedNama.dispatchEvent(evt);
                             }
+                        } catch (err) {
+                            console.warn('Warning setting inserted nama obat select value', err);
                         }
                     }
 
                     // set the hidden stok input (createDetailHTML already added stok-obat-hidden)
                     const insertedStokHidden = insertedRow.querySelector('.stok-obat-hidden');
-                    const insertedStokSelect = insertedRow.querySelector('.tanggal-kadaluwarsa-select');
-                    if (insertedStokSelect) {
-                        insertedStokSelect.innerHTML = '';
-                        const opt2 = document.createElement('option');
-                        opt2.value = a.stokId;
-                        opt2.textContent = a.display || a.iso || '';
-                        opt2.dataset.stok = a.qty;
-                        opt2.dataset.daysUntilExpiry = a.daysUntilExpiry;
-                        insertedStokSelect.appendChild(opt2);
-                        insertedStokSelect.dataset.stokValue = a.qty;
-                        insertedStokSelect.dataset.stokObatId = a.stokId;
-                        insertedStokSelect.value = a.stokId;
+                    const insertedTanggalDisplay = insertedRow.querySelector('.tanggal-kadaluwarsa-display');
+                    if (insertedTanggalDisplay) {
+                        insertedTanggalDisplay.value = a.display || a.iso || '';
+                        insertedTanggalDisplay.dataset.stokValue = a.qty;
+                        insertedTanggalDisplay.dataset.stokObatId = a.stokId;
+                        insertedTanggalDisplay.dataset.daysUntilExpiry = a.daysUntilExpiry;
                     }
                     if (insertedStokHidden) insertedStokHidden.value = a.stokId;
 
@@ -1291,7 +1338,7 @@
                 const errorMessages = createPengeluaranForm.querySelectorAll('.error-message-jumlah');
                 const visibleErrorIcons = createPengeluaranForm.querySelectorAll('.error-icon[style*="inline-flex"]');
                 const emptyJumlahInputs = Array.from(createPengeluaranForm.querySelectorAll('.jumlah-keluar-input')).filter(input => !input.value);
-                const emptyStokSelects = Array.from(createPengeluaranForm.querySelectorAll('.tanggal-kadaluwarsa-select')).filter(select => !select.value);
+                const emptyStokSelects = Array.from(createPengeluaranForm.querySelectorAll('.tanggal-kadaluwarsa-display')).filter(display => !display.value);
 
                 // Check near-expiry status and wait until all checks complete
                 const namaSelects = Array.from(createPengeluaranForm.querySelectorAll('.nama-obat-select')).filter(select => select.value);
@@ -1300,7 +1347,23 @@
                         const detailIndex = select.dataset.detailIndex;
                         try {
                             const response = await fetch(`/pengeluaran-obat/stok/${select.value}`);
-                            const data = await response.json();
+                            const originalData = await response.json();
+
+                            // Handle response - might be wrapped in object
+                            let data = originalData;
+                            if (!Array.isArray(data) && data && typeof data === 'object') {
+                                if (Array.isArray(data.data)) {
+                                    data = data.data;
+                                } else if (Array.isArray(data.stoks)) {
+                                    data = data.stoks;
+                                } else {
+                                    const values = Object.values(data);
+                                    if (Array.isArray(values) && values.length > 0 && typeof values[0] === 'object' && values[0].id) {
+                                        data = values;
+                                    }
+                                }
+                            }
+
                             const availableStoks = Array.isArray(data) ? data.filter(s => s.stok > 0) : [];
                             const allNearExpiry = availableStoks.length > 0 && availableStoks.every(s => s.days_until_expiry <= 30);
                             return allNearExpiry ? detailIndex : null;
@@ -1343,7 +1406,7 @@
                 const errorMessages = editPengeluaranForm.querySelectorAll('.error-message-jumlah');
                 const visibleErrorIcons = editPengeluaranForm.querySelectorAll('.error-icon[style*="inline-flex"]');
                 const emptyJumlahInputs = Array.from(editPengeluaranForm.querySelectorAll('.jumlah-keluar-input')).filter(input => !input.value);
-                const emptyStokSelects = Array.from(editPengeluaranForm.querySelectorAll('.tanggal-kadaluwarsa-select')).filter(select => !select.value);
+                const emptyStokSelects = Array.from(editPengeluaranForm.querySelectorAll('.tanggal-kadaluwarsa-display')).filter(display => !display.value);
 
                 // Check near-expiry status and wait until all checks complete
                 const namaSelects = Array.from(editPengeluaranForm.querySelectorAll('.nama-obat-select')).filter(select => select.value);
@@ -1352,7 +1415,23 @@
                         const detailIndex = select.dataset.detailIndex;
                         try {
                             const response = await fetch(`/pengeluaran-obat/stok/${select.value}`);
-                            const data = await response.json();
+                            const originalData = await response.json();
+
+                            // Handle response - might be wrapped in object
+                            let data = originalData;
+                            if (!Array.isArray(data) && data && typeof data === 'object') {
+                                if (Array.isArray(data.data)) {
+                                    data = data.data;
+                                } else if (Array.isArray(data.stoks)) {
+                                    data = data.stoks;
+                                } else {
+                                    const values = Object.values(data);
+                                    if (Array.isArray(values) && values.length > 0 && typeof values[0] === 'object' && values[0].id) {
+                                        data = values;
+                                    }
+                                }
+                            }
+
                             const availableStoks = Array.isArray(data) ? data.filter(s => s.stok > 0) : [];
                             const allNearExpiry = availableStoks.length > 0 && availableStoks.every(s => s.days_until_expiry <= 30);
                             return allNearExpiry ? detailIndex : null;

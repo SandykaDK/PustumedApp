@@ -49,6 +49,9 @@ class PemusnahanObatController extends Controller
             });
         }
 
+        $bulanPemusnahan = $request->query('bulan_pemusnahan');
+        $activeTab = $request->get('tab');
+
         // Sorting
         $sort_by = $request->get('sort_by', 'tanggal_kadaluwarsa');
         $direction = $request->get('direction', 'asc');
@@ -99,6 +102,14 @@ class PemusnahanObatController extends Controller
             $dimusnahkanQuery->whereHas('details.namaObat', function ($q) use ($search) {
                 $q->where('nama_obat', 'like', "%{$search}%");
             });
+        }
+
+        if (!empty($bulanPemusnahan) && $activeTab === 'sudah_dimusnahkan') {
+            [$tahun, $bulan] = explode('-', $bulanPemusnahan) + [null, null];
+            if ($tahun && $bulan) {
+                $dimusnahkanQuery->whereYear('tanggal_pemusnahan', $tahun)
+                    ->whereMonth('tanggal_pemusnahan', $bulan);
+            }
         }
 
         // Apply sorting for pemusnahan queries

@@ -151,7 +151,7 @@ class PenerimaanObatSeeder2 extends Seeder
             while ($monthDate->lte(Carbon::create(2026, 6, 1))) {
                 $monthKey = $monthDate->format('Y-m');
                 $penerimaan = PenerimaanObat::create([
-                    'no_batch' => 'BATCH-' . $monthDate->format('Ym') . '-001',
+                    'no_batch' => $monthDate->format('Ym') . '-001',
                     'tanggal_penerimaan' => $monthDate->format('Y-m-d'),
                     'user_id' => $userIds[($monthDate->month - 1) % count($userIds)],
                     'keterangan' => 'Penerimaan stok bulan ' . $monthDate->format('F Y') . ' untuk kebutuhan pengeluaran obat.',
@@ -168,15 +168,16 @@ class PenerimaanObatSeeder2 extends Seeder
                     $monthlyTotal = $monthlyTotals[$monthKey][$namaObatNama] ?? 0;
                     $jumlahMasuk = max($monthlyTotal + 120, 300);
                     $detailIndex++;
-                    $batchCode = 'BATCH-' . $monthDate->format('Ym') . '-' . str_pad($detailIndex, 3, '0', STR_PAD_LEFT);
+                    $expiryDate = $monthDate->copy()->addYear()->format('Y-m-d');
+                    $detailBatch = $penerimaan->no_batch . '-' . Carbon::parse($expiryDate)->format('Ymd');
                     $satuanId = $namaObat->satuan_obat_id ?? SatuanObat::first()?->id;
 
                     DetailPenerimaanObat::create([
                         'penerimaan_obat_id' => $penerimaan->id,
                         'nama_obat_id' => $namaObat->id,
                         'jenis_obat_id' => $namaObat->jenis_obat_id ?? 1,
-                        'no_batch' => $batchCode,
-                        'tanggal_kadaluwarsa' => $monthDate->copy()->addYear()->format('Y-m-d'),
+                        'no_batch' => $detailBatch,
+                        'tanggal_kadaluwarsa' => $expiryDate,
                         'jumlah_masuk' => $jumlahMasuk,
                         'satuan_id' => $satuanId,
                         'lokasi_penyimpanan' => $lokasiPenyimpanan[array_rand($lokasiPenyimpanan)],
@@ -184,9 +185,9 @@ class PenerimaanObatSeeder2 extends Seeder
 
                     StokObat::create([
                         'nama_obat_id' => $namaObat->id,
-                        'tanggal_kadaluwarsa' => $monthDate->copy()->addYear()->format('Y-m-d'),
+                        'tanggal_kadaluwarsa' => $expiryDate,
                         'stok' => $jumlahMasuk,
-                        'no_batch' => $batchCode,
+                        'no_batch' => $detailBatch,
                         'keterangan' => 'Stok awal penerimaan bulan ' . $monthDate->format('F Y') . ' seeder.',
                     ]);
                 }
