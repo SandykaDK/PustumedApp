@@ -98,7 +98,7 @@
             <table class="dokter-table">
                 <thead>
                 <tr>
-                    <th>No</th>
+                    <x-sortable-th column="id" label="No." />
                     <x-sortable-th column="nama" label="Nama Dokter" />
                     <x-sortable-th column="alamat" label="Alamat" />
                     <x-sortable-th column="jenis_kelamin" label="Jenis Kelamin" />
@@ -261,31 +261,31 @@
                         @csrf
 
                         <div class="form-group">
-                            <label for="nama">Nama Dokter</label>
-                            <input id="nama" type="text" name="nama" value="{{ old('nama') }}" required>
+                            <label for="nama">Nama Dokter <span class="required-star">*</span></label>
+                            <input id="nama" type="text" name="nama" value="{{ old('nama') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="alamat">Alamat</label>
-                            <input id="alamat" type="text" name="alamat" value="{{ old('alamat') }}" required>
+                            <label for="alamat">Alamat <span class="required-star">*</span></label>
+                            <input id="alamat" type="text" name="alamat" value="{{ old('alamat') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="jenis_kelamin">Jenis Kelamin</label>
-                            <select id="jenis_kelamin" name="jenis_kelamin" required>
+                            <label for="jenis_kelamin">Jenis Kelamin <span class="required-star">*</span></label>
+                            <select id="jenis_kelamin" name="jenis_kelamin">
                                 <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-Laki</option>
                                 <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="no_telepon">No. Telepon</label>
-                            <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                            <label for="no_telepon">No. Telepon <span class="required-star">*</span></label>
+                            <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Email</label>
-                            <input id="email" type="email" name="email" value="{{ old('email') }}" required>
+                            <label for="email">Email <span class="required-star">*</span></label>
+                            <input id="email" type="email" name="email" value="{{ old('email') }}">
                         </div>
 
                         <div class="form-group">
@@ -333,32 +333,32 @@
                         <input type="hidden" name="_method" value="PUT">
 
                         <div class="form-group">
-                            <label for="edit_nama">Nama Dokter</label>
-                            <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}" required>
+                            <label for="edit_nama">Nama Dokter <span class="required-star">*</span></label>
+                            <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_alamat">Alamat</label>
-                            <input id="edit_alamat" type="text" name="alamat" value="{{ old('alamat') }}" required>
+                            <label for="edit_alamat">Alamat <span class="required-star">*</span></label>
+                            <input id="edit_alamat" type="text" name="alamat" value="{{ old('alamat') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_jenis_kelamin">Jenis Kelamin</label>
-                            <select id="edit_jenis_kelamin" name="jenis_kelamin" required>
+                            <label for="edit_jenis_kelamin">Jenis Kelamin <span class="required-star">*</span></label>
+                            <select id="edit_jenis_kelamin" name="jenis_kelamin">
                                 <option value="L">Laki-laki</option>
                                 <option value="P">Perempuan</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_no_telepon">No. Telepon</label>
-                            <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
-                        </div>
+                                    <label for="edit_no_telepon">No. Telepon <span class="required-star">*</span></label>
+                                    <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
+                                </div>
 
-                        <div class="form-group">
-                            <label for="edit_email">Email</label>
-                            <input id="edit_email" type="email" name="email" value="{{ old('email') }}" required>
-                        </div>
+                                <div class="form-group">
+                                    <label for="edit_email">Email <span class="required-star">*</span></label>
+                                    <input id="edit_email" type="email" name="email" value="{{ old('email') }}">
+                                </div>
 
                         <div class="form-group">
                             <label>Status Dokter</label>

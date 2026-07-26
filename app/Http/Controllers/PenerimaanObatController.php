@@ -59,7 +59,10 @@ class PenerimaanObatController extends Controller
             ->paginate($perPage);
 
         // Load supporting data for dropdowns in modals
-        $namaObats = NamaObat::with(['jenisObat', 'satuanObat'])->orderBy('nama_obat')->get();
+        $namaObats = NamaObat::where('status', 'aktif')
+            ->with(['jenisObat', 'satuanObat'])
+            ->orderBy('nama_obat')
+            ->get();
         $jenisobats = JenisObat::orderBy('jenis_obat')->get();
         $satuanobats = SatuanObat::orderBy('satuan_obat')->get();
 
@@ -83,7 +86,12 @@ class PenerimaanObatController extends Controller
             'tanggal_penerimaan' => 'required|date',
             'keterangan' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
-            'details.*.nama_obat_id' => 'required|exists:nama_obat,id',
+            'details.*.nama_obat_id' => ['required', 'exists:nama_obat,id', function ($attribute, $value, $fail) {
+                $namaObat = NamaObat::find($value);
+                if ($namaObat && $namaObat->status !== 'aktif') {
+                    $fail('Obat yang dipilih tidak aktif.');
+                }
+            }],
             'details.*.jenis_obat_id' => 'required|exists:jenis_obat,id',
             'details.*.tanggal_kadaluwarsa' => 'required|date',
             'details.*.jumlah_masuk' => 'required|integer|min:1',
@@ -170,7 +178,12 @@ class PenerimaanObatController extends Controller
             'tanggal_penerimaan' => 'required|date',
             'keterangan' => 'nullable|string|max:500',
             'details' => 'required|array|min:1',
-            'details.*.nama_obat_id' => 'required|exists:nama_obat,id',
+            'details.*.nama_obat_id' => ['required', 'exists:nama_obat,id', function ($attribute, $value, $fail) {
+                $namaObat = NamaObat::find($value);
+                if ($namaObat && $namaObat->status !== 'aktif') {
+                    $fail('Obat yang dipilih tidak aktif.');
+                }
+            }],
             'details.*.jenis_obat_id' => 'required|exists:jenis_obat,id',
             'details.*.tanggal_kadaluwarsa' => 'required|date',
             'details.*.jumlah_masuk' => 'required|integer|min:1',

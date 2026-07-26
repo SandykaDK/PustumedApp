@@ -98,7 +98,7 @@
             <table class="pasien-table">
                 <thead>
                     <tr>
-                    <th>No</th>
+                    <x-sortable-th column="id" label="No." />
                     <x-sortable-th column="nama" label="Nama Pasien" />
                     <x-sortable-th column="nik" label="NIK" />
                     <x-sortable-th column="alamat" label="Alamat" />
@@ -195,9 +195,13 @@
                                         </svg>
                                     </button>
 
-                                    <!-- DELETE (confirm-delete component) -->
-                                    <x-confirm-delete action="{{ route('pasien.destroy', $pasien->id) }}" :id="'delete-pasien-'.$pasien->id" title="Hapus Pasien" message="Yakin ingin menghapus pasien {{ $pasien->nama }}?">
-                                        <button type="button" class="action-btn delete" title="Hapus">
+                                    <!-- DELETE (disable when pasien used in transactions) -->
+                                    @php
+                                        $isUsedInTransactions = $pasien->pengeluaranObat && $pasien->pengeluaranObat->count() > 0;
+                                    @endphp
+
+                                    @if ($isUsedInTransactions)
+                                        <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus — sudah digunakan di transaksi" disabled>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
@@ -218,7 +222,31 @@
                                                     v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
                                         </button>
-                                    </x-confirm-delete>
+                                    @else
+                                        <x-confirm-delete action="{{ route('pasien.destroy', $pasien->id) }}" :id="'delete-pasien-'.$pasien->id" title="Hapus Pasien" message="Yakin ingin menghapus pasien {{ $pasien->nama }}?">
+                                            <button type="button" class="action-btn delete" title="Hapus">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m14.74 9-.346 9m-4.788 0
+                                                        L9.26 9m9.968-3.21c.342.052.682.107
+                                                        1.022.166m-1.022-.165L18.16 19.673
+                                                        a2.25 2.25 0 0 1-2.244 2.077H8.084
+                                                        a2.25 2.25 0 0 1-2.244-2.077
+                                                        L4.772 5.79m14.456 0
+                                                        a48.108 48.108 0 0 0-3.478-.397
+                                                        m-12 .562c.34-.059.68-.114
+                                                        1.022-.165m0 0a48.11 48.11 0 0 1
+                                                        3.478-.397m7.5 0v-.916
+                                                        c0-1.18-.91-2.164-2.09-2.201
+                                                        a51.964 51.964 0 0 0-3.32 0
+                                                        c-1.18.037-2.09 1.022-2.09 2.201
+                                                        v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </x-confirm-delete>
+                                    @endif
 
                                 </div>
                             </td>
@@ -340,26 +368,26 @@
 
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="nama">Nama Pasien</label>
-                                    <input id="nama" type="text" name="nama" value="{{ old('nama') }}" required>
+                                    <label for="nama">Nama Pasien <span class="required-star">*</span></label>
+                                    <input id="nama" type="text" name="nama" value="{{ old('nama') }}">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="nik">NIK</label>
-                                    <input id="nik" type="text" name="nik" value="{{ old('nik') }}" required>
+                                    <label for="nik">NIK <span class="required-star">*</span></label>
+                                    <input id="nik" type="text" name="nik" value="{{ old('nik') }}">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="jenis_kelamin">Jenis Kelamin</label>
-                                    <select id="jenis_kelamin" name="jenis_kelamin" required>
+                                    <label for="jenis_kelamin">Jenis Kelamin <span class="required-star">*</span></label>
+                                    <select id="jenis_kelamin" name="jenis_kelamin">
                                         <option value="L" {{ old('jenis_kelamin') == 'L' ? 'selected' : '' }}>Laki-Laki</option>
                                         <option value="P" {{ old('jenis_kelamin') == 'P' ? 'selected' : '' }}>Perempuan</option>
                                     </select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="golongan_darah">Golongan Darah</label>
-                                    <select id="golongan_darah" name="golongan_darah" required>
+                                    <label for="golongan_darah">Golongan Darah <span class="required-star">*</span></label>
+                                    <select id="golongan_darah" name="golongan_darah">
                                         <option value="A" {{ old('golongan_darah') == 'A' ? 'selected' : '' }}>A</option>
                                         <option value="B" {{ old('golongan_darah') == 'B' ? 'selected' : '' }}>B</option>
                                         <option value="AB" {{ old('golongan_darah') == 'AB' ? 'selected' : '' }}>AB</option>
@@ -368,13 +396,13 @@
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="no_bpjs">No. BPJS</label>
-                                    <input id="no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
+                                    <label for="no_bpjs">No. BPJS <span class="required-star">*</span></label>
+                                    <input id="no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}">
                                 </div>
 
                                 <div class="form-group">
-                                    <label for="no_telepon">No. Telepon</label>
-                                    <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
+                                    <label for="no_telepon">No. Telepon <span class="required-star">*</span></label>
+                                    <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
                                 </div>
 
                                 <div class="form-group form-group-full">
@@ -388,8 +416,8 @@
                                 </div>
 
                                 <div class="form-group form-group-full">
-                                    <label for="alamat">Alamat</label>
-                                    <textarea id="alamat" name="alamat" rows="3" required>{{ old('alamat') }}</textarea>
+                                    <label for="alamat">Alamat <span class="required-star">*</span></label>
+                                    <textarea id="alamat" name="alamat" rows="3">{{ old('alamat') }}</textarea>
                                 </div>
                             </div>
 
@@ -429,26 +457,22 @@
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="edit_nama">Nama Pasien</label>
-                                <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}" required>
-                            </div>
-
+                                <label for="edit_nama">Nama Pasien <span class="required-star">*</span></label>
+                                    <input id="edit_nama" type="text" name="nama" value="{{ old('nama') }}">
                             <div class="form-group">
-                                <label for="edit_nik">NIK</label>
-                                <input id="edit_nik" type="text" name="nik" value="{{ old('nik') }}" required>
-                            </div>
-
+                                <label for="edit_nik">NIK <span class="required-star">*</span></label>
+                                    <input id="edit_nik" type="text" name="nik" value="{{ old('nik') }}">
                             <div class="form-group">
-                                <label for="edit_jenis_kelamin">Jenis Kelamin</label>
-                                <select id="edit_jenis_kelamin" name="jenis_kelamin" required>
+                                <label for="edit_jenis_kelamin">Jenis Kelamin <span class="required-star">*</span></label>
+                                <select id="edit_jenis_kelamin" name="jenis_kelamin">
                                     <option value="L">Laki-laki</option>
                                     <option value="P">Perempuan</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_golongan_darah">Golongan Darah</label>
-                                <select id="edit_golongan_darah" name="golongan_darah" required>
+                                <label for="edit_golongan_darah">Golongan Darah <span class="required-star">*</span></label>
+                                <select id="edit_golongan_darah" name="golongan_darah">
                                     <option value="A">A</option>
                                     <option value="B">B</option>
                                     <option value="AB">AB</option>
@@ -457,15 +481,11 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_no_bpjs">No. BPJS</label>
-                                <input id="edit_no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}" required>
-                            </div>
-
+                                <label for="edit_no_bpjs">No. BPJS <span class="required-star">*</span></label>
+                                    <input id="edit_no_bpjs" type="text" name="no_bpjs" value="{{ old('no_bpjs') }}">
                             <div class="form-group">
-                                <label for="edit_no_telepon">No. Telepon</label>
-                                <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}" required>
-                            </div>
-
+                                <label for="edit_no_telepon">No. Telepon <span class="required-star">*</span></label>
+                                    <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
                             <div class="form-group form-group-full">
                                 <label for="edit_status_toggle">Status Akun</label>
                                 <div class="toggle-switch">
@@ -477,8 +497,8 @@
                             </div>
 
                             <div class="form-group form-group-full">
-                                <label for="edit_alamat">Alamat</label>
-                                <textarea id="edit_alamat" name="alamat" rows="3" required>{{ old('alamat') }}</textarea>
+                                <label for="edit_alamat">Alamat <span class="required-star">*</span></label>
+                                <textarea id="edit_alamat" name="alamat" rows="3">{{ old('alamat') }}</textarea>
                             </div>
                         </div>
 

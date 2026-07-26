@@ -87,7 +87,7 @@
             <table class="jenis-obat-table">
                 <thead>
                 <tr>
-                    <th>No</th>
+                    <x-sortable-th column="id" label="No." />
                     <x-sortable-th column="kode_jenis" label="Kode Jenis" />
                     <x-sortable-th column="jenis_obat" label="Nama Jenis Obat" />
                     {{-- <x-sortable-th column="created_at" label="Tanggal Dibuat" /> --}}
@@ -234,13 +234,13 @@
                         @csrf
 
                         <div class="form-group">
-                            <label for="kode_jenis">Kode Jenis</label>
-                            <input id="kode_jenis" type="text" name="kode_jenis" value="{{ old('kode_jenis') }}" required>
+                            <label for="kode_jenis">Kode Jenis <span class="required-star">*</span></label>
+                            <input id="kode_jenis" type="text" name="kode_jenis" value="{{ old('kode_jenis') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="jenis_obat">Nama Jenis Obat</label>
-                            <input id="jenis_obat" type="text" name="jenis_obat" value="{{ old('jenis_obat') }}" required>
+                            <label for="jenis_obat">Nama Jenis Obat <span class="required-star">*</span></label>
+                            <input id="jenis_obat" type="text" name="jenis_obat" value="{{ old('jenis_obat') }}">
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -278,13 +278,13 @@
                         <input type="hidden" name="_method" value="PUT">
 
                         <div class="form-group">
-                            <label for="edit_kode_jenis">Kode Jenis</label>
-                            <input id="edit_kode_jenis" type="text" name="kode_jenis" value="{{ old('kode_jenis') }}" required>
+                            <label for="edit_kode_jenis">Kode Jenis <span class="required-star">*</span></label>
+                            <input id="edit_kode_jenis" type="text" name="kode_jenis" value="{{ old('kode_jenis') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_jenis_obat">Nama Jenis Obat</label>
-                            <input id="edit_jenis_obat" type="text" name="jenis_obat" value="{{ old('jenis_obat') }}" required>
+                            <label for="edit_jenis_obat">Nama Jenis Obat <span class="required-star">*</span></label>
+                            <input id="edit_jenis_obat" type="text" name="jenis_obat" value="{{ old('jenis_obat') }}">
                         </div>
 
                         <div class="form-actions modal-actions">

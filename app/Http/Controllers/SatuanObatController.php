@@ -12,14 +12,14 @@ class SatuanObatController extends Controller
     public function index(Request $request)
     {
         $search = $request->search;
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['kode_satuan', 'satuan_obat', 'created_at'];
+        $allowed = ['id', 'kode_satuan', 'satuan_obat', 'created_at'];
         if (! in_array($sort, $allowed)) {
-            $sort = 'created_at';
+            $sort = 'id';
         }
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
@@ -49,12 +49,20 @@ class SatuanObatController extends Controller
 
     public function store(Request $request)
     {
+        $messages = [
+            'kode_satuan.required' => 'Kode Satuan harus diisi.',
+            'kode_satuan.string' => 'Kode Satuan harus berupa teks.',
+            'kode_satuan.max' => 'Kode Satuan tidak boleh lebih dari 255 karakter.',
+            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
+            'satuan_obat.required' => 'Satuan Obat harus diisi.',
+            'satuan_obat.string' => 'Satuan Obat harus berupa teks.',
+            'satuan_obat.max' => 'Satuan Obat tidak boleh lebih dari 255 karakter.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'kode_satuan'        => 'required|string|max:255|unique:satuan_obat,kode_satuan',
             'satuan_obat'       => 'required|string|max:255',
-        ], [
-            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('satuan-obat.index')
@@ -62,9 +70,13 @@ class SatuanObatController extends Controller
                 ->withInput();
         }
 
+        $kodeSatuan = $request->filled('kode_satuan')
+            ? $request->kode_satuan
+            : SatuanObat::generateKode();
+
         try {
             SatuanObat::create([
-                'kode_satuan'       => $request->kode_satuan,
+                'kode_satuan'       => $kodeSatuan,
                 'satuan_obat'      => $request->satuan_obat,
             ]);
         } catch (QueryException $exception) {
@@ -88,12 +100,20 @@ class SatuanObatController extends Controller
 
     public function update(Request $request, SatuanObat $satuan_obat)
     {
+        $messages = [
+            'kode_satuan.required' => 'Kode Satuan harus diisi.',
+            'kode_satuan.string' => 'Kode Satuan harus berupa teks.',
+            'kode_satuan.max' => 'Kode Satuan tidak boleh lebih dari 255 karakter.',
+            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
+            'satuan_obat.required' => 'Satuan Obat harus diisi.',
+            'satuan_obat.string' => 'Satuan Obat harus berupa teks.',
+            'satuan_obat.max' => 'Satuan Obat tidak boleh lebih dari 255 karakter.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'kode_satuan'        => 'required|string|max:255|unique:satuan_obat,kode_satuan,' . $satuan_obat->id,
             'satuan_obat'       => 'required|string|max:255',
-        ], [
-            'kode_satuan.unique' => 'Kode Satuan "' . $request->kode_satuan . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('satuan-obat.index')
@@ -102,11 +122,13 @@ class SatuanObatController extends Controller
                 ->with('edit_satuan_obat_id', $satuan_obat->id);
         }
 
+        $data = $request->only(['satuan_obat']);
+        $data['kode_satuan'] = $request->filled('kode_satuan')
+            ? $request->kode_satuan
+            : SatuanObat::generateKode($satuan_obat->id);
+
         try {
-            $satuan_obat->update($request->only([
-                'kode_satuan',
-                'satuan_obat'
-            ]));
+            $satuan_obat->update($data);
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23000') {
                 return redirect()->route('satuan-obat.index')

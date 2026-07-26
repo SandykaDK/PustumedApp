@@ -169,6 +169,58 @@ class DashboardController extends Controller
             return response()->json($response);
         }
 
+        if (request()->header('X-Requested-With') === 'XMLHttpRequest' && $data['dashboardType'] === 'petugas_administrasi') {
+            $response = [];
+
+            if (request()->has('chart_year')) {
+                $chartYear = (int) request('chart_year', Carbon::today()->year);
+                $chartMonths = [];
+                $chartUsageData = [];
+
+                for ($month = 1; $month <= 12; $month++) {
+                    $monthDate = Carbon::createFromDate($chartYear, $month, 1)->locale('id');
+                    $chartMonths[] = $monthDate->translatedFormat('M Y');
+                    $chartUsageData[] = (int) DetailPengeluaranObat::join('pengeluaran_obat', 'pengeluaran_obat.id', '=', 'detail_pengeluaran_obat.pengeluaran_obat_id')
+                        ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                            $monthDate->copy()->startOfMonth()->toDateString(),
+                            $monthDate->copy()->endOfMonth()->toDateString(),
+                        ])
+                        ->sum('detail_pengeluaran_obat.jumlah_keluar');
+                }
+
+                $response['chartMonths'] = $chartMonths;
+                $response['chartUsageData'] = $chartUsageData;
+            }
+
+            if (request()->has('admin_month') || request()->has('admin_year')) {
+                $month = (int) request('admin_month', Carbon::today()->month);
+                $year = (int) request('admin_year', Carbon::today()->year);
+                $filterMonthStart = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+                $filterMonthEnd = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+                $patientVisitSummary = PengeluaranObat::join('pasien', 'pengeluaran_obat.pasien_id', '=', 'pasien.id')
+                    ->whereBetween('pengeluaran_obat.tanggal_pengeluaran', [
+                        $filterMonthStart->toDateString(),
+                        $filterMonthEnd->toDateString(),
+                    ])
+                    ->select(
+                        'pasien.nama as nama_pasien',
+                        DB::raw('COUNT(pengeluaran_obat.id) as jumlah_kedatangan')
+                    )
+                    ->groupBy('pasien.id', 'pasien.nama')
+                    ->orderByDesc('jumlah_kedatangan')
+                    ->get()
+                    ->map(fn($item) => [
+                        'nama_pasien' => $item->nama_pasien ?? '-',
+                        'jumlah_kedatangan' => (int) $item->jumlah_kedatangan,
+                    ]);
+
+                $response['patientVisitSummary'] = $patientVisitSummary;
+            }
+
+            return response()->json($response);
+        }
+
         return view('dashboard', $data);
     }
 
@@ -287,6 +339,20 @@ class DashboardController extends Controller
             ->whereDate('tanggal_kadaluwarsa', '<=', $next30Days->toDateString())
             ->distinct('nama_obat_id')
             ->count('nama_obat_id');
+        $willExpireCount = $obatMendekatiKadaluarsa;
+        $lowStockCount = $stockByObat->filter(function ($obat) use ($stockSummary) {
+            $summary = $stockSummary->get($obat->id);
+            $totalStok = (int) ($summary->total_stok ?? 0);
+            $minimumStock = (int) ($obat->minMax?->minimum_stock ?? 0);
+
+            return $minimumStock > 0 && $totalStok > 0 && $totalStok <= $minimumStock;
+        })->count();
+        $outOfStockCount = $stockByObat->filter(function ($obat) use ($stockSummary) {
+            $summary = $stockSummary->get($obat->id);
+            $totalStok = (int) ($summary->total_stok ?? 0);
+
+            return $totalStok <= 0;
+        })->count();
         $transaksiHariIni = PenerimaanObat::whereDate('tanggal_penerimaan', $today->toDateString())->count()
             + PengeluaranObat::whereDate('tanggal_pengeluaran', $today->toDateString())->count();
 
@@ -294,6 +360,9 @@ class DashboardController extends Controller
         $pemusnahanPendingCount = PemusnahanObat::where('status', 'pending')->count();
         $pemusnahanApprovedCount = PemusnahanObat::where('status', 'approved')->count();
         $pemusnahanDimusnahkanCount = PemusnahanObat::where('status', 'dimusnahkan')->count();
+        $pemusnahanBulanIniCount = PemusnahanObat::where('status', 'dimusnahkan')
+            ->whereBetween('tanggal_pemusnahan', [$monthStart->toDateString(), $today->copy()->endOfMonth()->toDateString()])
+            ->count();
 
         // Determine stok batches near expiry that are not already referenced by a pending pemusnahan request
         $pendingStokIds = \App\Models\DetailPemusnahanObat::whereHas('pemusnahan', function ($q) {
@@ -459,7 +528,11 @@ class DashboardController extends Controller
                 'sudah_diajukan' => $pemusnahanPendingCount,
                 'sudah_disetujui' => $pemusnahanApprovedCount,
                 'sudah_dimusnahkan' => $pemusnahanDimusnahkanCount,
+                'bulan_ini' => $pemusnahanBulanIniCount,
             ],
+            'willExpireCount' => $willExpireCount,
+            'lowStockCount' => $lowStockCount,
+            'outOfStockCount' => $outOfStockCount,
             'chartMonths' => $chartMonths,
             'chartReceiptsData' => $chartReceiptsData,
             'chartIssuesData' => $chartIssuesData,
@@ -576,7 +649,7 @@ class DashboardController extends Controller
             ->groupBy('nama_obat_id')
             ->orderByDesc('total_keluar')
             ->with('namaObat')
-            ->limit(10)
+            ->limit(5)
             ->get()
             ->map(function ($item) {
                 return [
@@ -584,6 +657,9 @@ class DashboardController extends Controller
                     'jumlah_keluar' => (int) $item->total_keluar,
                 ];
             });
+
+        $topIssuedObatLabels = $topIssuedObat->pluck('nama_obat')->toArray();
+        $topIssuedObatData = $topIssuedObat->pluck('jumlah_keluar')->toArray();
 
         $recentIssues = PengeluaranObat::with(['detailPengeluaranObat.namaObat'])
             ->orderByDesc('tanggal_pengeluaran')
@@ -650,6 +726,11 @@ class DashboardController extends Controller
             ])
             ->toArray();
 
+        // Hitung pasien unik yang dilayani bulan ini (relevant untuk admin role menus)
+        $pasienBulanIni = PengeluaranObat::whereBetween('tanggal_pengeluaran', [$filterMonthStart->toDateString(), $filterMonthEnd->toDateString()])
+            ->distinct('pasien_id')
+            ->count('pasien_id');
+
         return [
             'dashboardType' => 'petugas_administrasi',
             'dashboardTitle' => 'Dashboard Petugas Administrasi',
@@ -657,10 +738,10 @@ class DashboardController extends Controller
             'dashboardAccentClass' => 'administrasi-hero',
             'dashboardBadge' => 'Role: Petugas Administrasi',
             'dashboardStats' => [
-                ['label' => 'Total Transaksi Pengeluaran Hari Ini', 'value' => number_format($totalTransaksiPengeluaranHariIni), 'icon' => '📅', 'tone' => 'blue'],
                 ['label' => 'Total Transaksi Bulan Ini', 'value' => number_format($totalTransaksiPengeluaranBulanIni), 'icon' => '🗓️', 'tone' => 'purple'],
+                ['label' => 'Pasien Bulan Ini', 'value' => number_format($pasienBulanIni), 'icon' => '', 'tone' => 'blue'],
                 ['label' => 'Obat Stok Menipis', 'value' => number_format($lowStockCount), 'icon' => '⚠️', 'tone' => 'orange'],
-                ['label' => 'Obat Akan Kadaluarsa', 'value' => number_format($jumlahObatAkanKadaluarsa), 'icon' => '⏳', 'tone' => 'red'],
+                ['label' => 'Obat Akan Kadaluwarsa', 'value' => number_format($jumlahObatAkanKadaluarsa), 'icon' => '⏳', 'tone' => 'red'],
             ],
             'dashboardHighlights' => [
                 ['label' => 'Total jenis obat keluar', 'value' => number_format($jenisObatKeluarHariIni), 'description' => 'Jenis obat yang tercatat keluar hari ini.'],
@@ -672,6 +753,8 @@ class DashboardController extends Controller
             'chartUsageData' => $chartUsageData,
             'patientVisitSummary' => $patientVisitSummary,
             'topIssuedObat' => $topIssuedObat,
+            'topIssuedObatLabels' => $topIssuedObatLabels,
+            'topIssuedObatData' => $topIssuedObatData,
             'recentIssues' => $recentIssues,
             'stockAlerts' => $stockItems->sortBy('stok')->take(8)->values(),
             'expiringSoonItems' => $expiringSoonItems->take(8)->values(),
@@ -695,6 +778,12 @@ class DashboardController extends Controller
         $stokKosong = StokObat::where('stok', '<=', 0)->count();
         $willExpireCount = StokObat::where('stok', '>', 0)
             ->whereDate('tanggal_kadaluwarsa', '<=', $now->copy()->addMonths(6)->toDateString())
+            ->count();
+        $lowStockCount = DB::table('min_max')
+            ->join('nama_obat', 'min_max.nama_obat_id', '=', 'nama_obat.id')
+            ->whereRaw('min_max.minimum_stock > (select COALESCE(SUM(stok),0) from stok_obat where nama_obat_id = nama_obat.id)')
+            ->select('nama_obat.id')
+            ->distinct()
             ->count();
         $expiredCount = StokObat::where('stok', '>', 0)
             ->whereDate('tanggal_kadaluwarsa', '<', $now->toDateString())
@@ -854,7 +943,7 @@ class DashboardController extends Controller
 
         return [
             'dashboardType' => 'kepala_pustu',
-            'dashboardTitle' => 'Dashboard Kepala Pustu',
+            'dashboardTitle' => 'Dashboard Kepala Puskesmas Pembantu',
             'dashboardDescription' => 'Ringkasan kondisi operasional, status stok, dan aktivitas layanan untuk mendukung pengambilan keputusan.',
             'dashboardAccentClass' => 'kepala-pustu-hero',
             'dashboardBadge' => 'Role: Kepala Pustu',
@@ -879,6 +968,7 @@ class DashboardController extends Controller
             'totalJenisObat' => $totalJenisObat,
             'totalStokAktif' => $totalStokAktif,
             'willExpireCount' => $willExpireCount,
+            'lowStockCount' => $lowStockCount,
             'expiredCount' => $expiredCount,
             'transactionsThisMonth' => $transactionsThisMonth,
             'destructionsThisMonth' => $destructionsThisMonth,

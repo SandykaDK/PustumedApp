@@ -1,138 +1,76 @@
 <div class="petugas-obat-dashboard">
-    <div class="pemusnahan-container" style="background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
-        <h2 style="margin-bottom: 1rem; margin-top: 0;">Status Pemusnahan Obat</h2>
-        <div class="stats-grid petugas-stats-grid">
-            <!-- Pemusnahan status cards: show separate cards for each status -->
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f3f4f6;">
-                <div class="stat-icon gray">
+    <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap; margin-bottom:1rem;">
+        <div class="pemusnahan-container" style="flex:1; min-width:320px; background: white; padding: 1rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb;">
+            <h2 style="margin-bottom: 1rem; margin-top: 0;">Status Pemusnahan Obat</h2>
+            <div class="stats-grid petugas-stats-grid">
+                <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <div class="stat-icon gray" style="background: #e5e7eb; color: #374151; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h6M7 11h6M7 15h6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3v4a1 1 0 0 0 1 1h4M5 21h14a2 2 0 0 0 2-2V7L14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z"/></svg>
                 </div>
-                <h3 style="font-size: 1rem;">Belum Diajukan</h3>
-                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['belum_diajukan'] ?? 0) }}</div>
+                <div style="min-width:0;">
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Belum Diajukan</h3>
+                    <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($pemusnahanCounts['belum_diajukan'] ?? 0) }}</div>
+                </div>
             </a>
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #fef3c7;">
-                <div class="stat-icon orange">
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_diajukan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #fff7ed; border: 1px solid #fdba74; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <div class="stat-icon orange" style="background: #ffedd5; color: #c2410c; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
                 </div>
-                <h3 style="font-size: 1rem;">Sudah Diajukan</h3>
-                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_diajukan'] ?? 0) }}</div>
+                <div style="min-width:0;">
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Sudah Diajukan</h3>
+                    <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($pemusnahanCounts['sudah_diajukan'] ?? 0) }}</div>
+                </div>
             </a>
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_disetujui']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #dcfce7;">
-                <div class="stat-icon green">
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_disetujui']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f0fdf4; border: 1px solid #86efac; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <div class="stat-icon green" style="background: #dcfce7; color: #15803d; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></svg>
                 </div>
-                <h3 style="font-size: 1rem;">Sudah Disetujui</h3>
-                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_disetujui'] ?? 0) }}</div>
+                <div style="min-width:0;">
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Sudah Disetujui</h3>
+                    <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($pemusnahanCounts['sudah_disetujui'] ?? 0) }}</div>
+                </div>
             </a>
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dimusnahkan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f3e8ff;">
-                <div class="stat-icon purple">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dimusnahkan']) }}" class="stat-card" style="text-decoration:none; color:inherit; background: #f5f3ff; border: 1px solid #c4b5fd; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                <div class="stat-icon purple" style="background: #ede9fe; color: #6d28d9; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 11v6M14 11v6"/></svg>
                 </div>
-                <h3 style="font-size: 1rem;">Sudah Dimusnahkan</h3>
-                <div class="value" style="font-size: 1,2rem;">{{ number_format($pemusnahanCounts['sudah_dimusnahkan'] ?? 0) }}</div>
+                <div style="min-width:0;">
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Pemusnahan Bulan Ini</h3>
+                    <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($pemusnahanCounts['bulan_ini'] ?? 0) }}</div>
+                </div>
             </a>
-        </div>
-    </div>
-
-    <div class="petugas-top-grid">
-        <div class="chart-card priority-table-card">
-            <h3>Info Stok Obat</h3>
-            <div class="priority-table-toolbar">
-                <div class="priority-filter-group">
-                    <br>
-                    <label for="priorityStatusFilter">Filter Status</label>
-                    <select id="priorityStatusFilter" class="priority-status-filter">
-                        <option value="all">Semua Status</option>
-                        <option value="stok_habis">Stok Habis</option>
-                        <option value="perlu_pengadaan">Perlu Pengadaan</option>
-                        <option value="kadaluarsa">Sudah Kadaluwarsa</option>
-                        <option value="mendekati_kadaluarsa">Mendekati Kadaluarsa</option>
-                        {{-- <option value="belum_minmax">Belum Ada Min-Max</option> --}}
-                    </select>
-                </div>
-                <div class="priority-table-meta">
-                    <span>{{ count($priorityItems ?? []) }} data </span>
-                </div>
-            </div>
-            <div class="priority-table-wrap">
-                <table class="priority-table" id="priorityTable">
-                    <thead>
-                        <tr>
-                            <th>Nama Obat</th>
-                            <th>Stok</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php
-                            // Tampilkan semua item prioritas (biarkan container yang menggulir jika banyak data)
-                            $displayPriorityItems = $priorityItems ?? [];
-                        @endphp
-
-                        @forelse($displayPriorityItems as $item)
-                            <tr data-status="{{ $item['status_key'] ?? 'aman' }}">
-                                <td>{{ $item['nama_obat'] ?? '-' }}</td>
-                                <td>{{ number_format($item['stok'] ?? 0) }}</td>
-                                <td>
-                                    <span class="priority-status {{ $item['tone'] ?? 'success' }}">
-                                        {{ $item['status_label'] ?? $item['status'] ?? 'Aman' }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr class="priority-empty-row">
-                                <td colspan="3" class="empty">Tidak ada obat yang masuk prioritas saat ini.</td>
-                            </tr>
-                        @endforelse
-                        <tr class="priority-no-results" style="display:none;">
-                            <td colspan="3" class="empty">Tidak ada data yang cocok dengan filter status.</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
-        <div class="info-section notifications petugas-notifications">
-            <h2>Notifikasi</h2>
-            <div class="notification-scroll">
-                <div class="notification-stack">
-                    @php
-                        // Robust sorting: compute numeric timestamp for each notification then sort desc
-                        $sortedNotifications = collect($notifications ?? [])->map(function ($n) {
-                            $ts = 0;
-                            if (isset($n['sort_at'])) {
-                                if (is_numeric($n['sort_at'])) {
-                                    $ts = (int) $n['sort_at'];
-                                } elseif ($n['sort_at'] instanceof \DateTimeInterface) {
-                                    $ts = $n['sort_at']->getTimestamp();
-                                } else {
-                                    $ts = strtotime((string) $n['sort_at']) ?: 0;
-                                }
-                            }
-                            $n['_ts'] = $ts;
-                            return $n;
-                        })->sortByDesc('_ts')->values();
-                    @endphp
-
-                    @forelse($sortedNotifications as $notification)
-                        <div class="notification-card {{ $notification['type'] ?? 'info' }}">
-                            <span class="notification-chip">
-                                {{ $notification['title'] ?? 'Notifikasi' }}
-                            </span>
-                            <strong>{{ $notification['name'] ?? '-' }}</strong>
-                            <small>
-                                @if(($notification['type'] ?? '') === 'danger' && !empty($notification['tanggal_kadaluwarsa']))
-                                    {{ \Carbon\Carbon::parse($notification['tanggal_kadaluwarsa'])->translatedFormat('d M Y') }}
-                                @else
-                                    {{ $notification['description'] ?? '' }}
-                                @endif
-                            </small>
-                        </div>
-                    @empty
-                        <div class="notification-empty">
-                            Tidak ada notifikasi penting saat ini.
-                        </div>
-                    @endforelse
+        <div style="flex:1; min-width:320px; background:white; padding:1rem; border-radius:0.75rem; box-shadow:0 1px 3px rgba(0,0,0,0.1); border:1px solid #e5e7eb;">
+            <h2 style="margin-bottom: 1rem; margin-top: 0;">Ringkasan Stok</h2>
+            <div class="stats-grid petugas-stats-grid">
+                <div class="stat-card" style="text-decoration:none; color:inherit; background: #fff7ed; border: 1px solid #fdba74; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                    <div class="stat-icon orange" style="background: #ffedd5; color: #c2410c; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Obat Akan Kadaluwarsa</h3>
+                        <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($willExpireCount ?? 0) }}</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="text-decoration:none; color:inherit; background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                    <div class="stat-icon red" style="background: #fee2e2; color: #b91c1c; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181" /></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Obat Menipis</h3>
+                        <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($lowStockCount ?? 0) }}</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="text-decoration:none; color:inherit; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 0.75rem; padding: 1rem; display:flex; align-items:center; gap:0.9rem; min-height: 96px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
+                    <div class="stat-icon red" style="background: #fee2e2; color: #dc2626; flex-shrink:0; border-radius: 9999px; width: 2.75rem; height: 2.75rem; display:flex; align-items:center; justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+                    </div>
+                    <div style="min-width:0;">
+                        <h3 style="margin:0 0 0.2rem 0; font-size: 0.96rem; color:#111827;">Obat Habis</h3>
+                        <div class="value" style="font-size: 1.3rem; font-weight: 600; color:#111827;">{{ number_format($outOfStockCount ?? 0) }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -203,33 +141,6 @@
             });
         };
 
-        const priorityStatusFilter = document.getElementById('priorityStatusFilter');
-        const priorityTable = document.getElementById('priorityTable');
-
-        if (priorityStatusFilter && priorityTable) {
-            const rows = Array.from(priorityTable.querySelectorAll('tbody tr[data-status]'));
-            const emptyRow = priorityTable.querySelector('.priority-no-results');
-
-            const applyPriorityFilter = () => {
-                const selected = priorityStatusFilter.value;
-                let visibleCount = 0;
-
-                rows.forEach((row) => {
-                    const rowStatus = row.getAttribute('data-status') || 'aman';
-                    const matches = selected === 'all' || rowStatus === selected;
-                    row.style.display = matches ? '' : 'none';
-                    if (matches) visibleCount += 1;
-                });
-
-                if (emptyRow) {
-                    emptyRow.style.display = visibleCount === 0 ? '' : 'none';
-                }
-            };
-
-            priorityStatusFilter.addEventListener('change', applyPriorityFilter);
-            applyPriorityFilter();
-        }
-
         // Separate data for receipts and issues charts
         let receiptsMonths = convertToIndonesianMonths({!! json_encode($chartMonths ?? []) !!});
         let receipts = {!! json_encode($chartReceiptsData ?? []) !!};
@@ -239,8 +150,16 @@
 
         let receiptsChart = null;
         let issuesChart = null;
+        let sharedYMax = 1;
+
+        const refreshSharedYMax = () => {
+            const values = [...receipts, ...issues].filter(value => Number.isFinite(value));
+            const maxValue = values.length > 0 ? Math.max(...values) : 0;
+            sharedYMax = maxValue > 0 ? Math.ceil(maxValue * 1.1) : 1;
+        };
 
         const initReceiptsChart = () => {
+            refreshSharedYMax();
             const receiptsCanvas = document.getElementById('chartReceipts');
             if (receiptsCanvas) {
                 if (receiptsChart) {
@@ -264,7 +183,7 @@
                         responsive: true,
                         plugins: { legend: { display: false } },
                         scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                            y: { beginAtZero: true, max: sharedYMax, ticks: { precision: 0 } }
                         }
                     }
                 });
@@ -272,6 +191,7 @@
         };
 
         const initIssuesChart = () => {
+            refreshSharedYMax();
             const issuesCanvas = document.getElementById('chartIssues');
             if (issuesCanvas) {
                 if (issuesChart) {
@@ -295,7 +215,7 @@
                         responsive: true,
                         plugins: { legend: { display: false } },
                         scales: {
-                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                            y: { beginAtZero: true, max: sharedYMax, ticks: { precision: 0 } }
                         }
                     }
                 });

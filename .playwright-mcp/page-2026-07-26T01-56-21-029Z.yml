@@ -1,0 +1,15 @@
+- generic [ref=f6e3]:
+  - img "Logo PustumedApp" [ref=f6e5]
+  - generic [ref=f6e6]:
+    - heading "PUSTUMED APP" [level=1] [ref=f6e7]
+    - paragraph [ref=f6e8]: Kelola stok obat dengan mudah
+  - generic [ref=f6e9]:
+    - generic [ref=f6e10]:
+      - generic [ref=f6e11]: Email atau Username
+      - textbox "Email atau Username" [ref=f6e12]:
+        - /placeholder: Masukkan email atau username Anda
+    - generic [ref=f6e13]:
+      - generic [ref=f6e14]: Password
+      - textbox "Password" [ref=f6e15]:
+        - /placeholder: Masukkan password Anda
+    - button "Login" [ref=f6e16] [cursor=pointer]

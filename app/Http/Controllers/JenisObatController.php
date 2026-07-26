@@ -11,14 +11,14 @@ class JenisObatController extends Controller
     public function index(Request $request)
     {
         $search = $request->search;
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['kode_jenis', 'jenis_obat', 'created_at'];
+        $allowed = ['id', 'kode_jenis', 'jenis_obat', 'created_at'];
         if (! in_array($sort, $allowed)) {
-            $sort = 'created_at';
+            $sort = 'id';
         }
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
@@ -48,13 +48,21 @@ class JenisObatController extends Controller
 
     public function store(Request $request)
     {
+        $messages = [
+            'kode_jenis.required' => 'Kode Jenis harus diisi.',
+            'kode_jenis.string' => 'Kode Jenis harus berupa teks.',
+            'kode_jenis.max' => 'Kode Jenis tidak boleh lebih dari 255 karakter.',
+            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
+            'jenis_obat.required' => 'Jenis Obat harus diisi.',
+            'jenis_obat.string' => 'Jenis Obat harus berupa teks.',
+            'jenis_obat.max' => 'Jenis Obat tidak boleh lebih dari 255 karakter.',
+            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
+        ];
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'kode_jenis'        => 'required|string|max:255|unique:jenis_obat,kode_jenis',
             'jenis_obat'       => 'required|string|max:255|unique:jenis_obat,jenis_obat',
-        ], [
-            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
-            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('jenis-obat.index')
@@ -88,13 +96,21 @@ class JenisObatController extends Controller
 
     public function update(Request $request, JenisObat $jenis_obat)
     {
+        $messages = [
+            'kode_jenis.required' => 'Kode Jenis harus diisi.',
+            'kode_jenis.string' => 'Kode Jenis harus berupa teks.',
+            'kode_jenis.max' => 'Kode Jenis tidak boleh lebih dari 255 karakter.',
+            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
+            'jenis_obat.required' => 'Jenis Obat harus diisi.',
+            'jenis_obat.string' => 'Jenis Obat harus berupa teks.',
+            'jenis_obat.max' => 'Jenis Obat tidak boleh lebih dari 255 karakter.',
+            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
+        ];
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'kode_jenis'        => 'required|string|max:255|unique:jenis_obat,kode_jenis,' . $jenis_obat->id,
             'jenis_obat'       => 'required|string|max:255|unique:jenis_obat,jenis_obat,' . $jenis_obat->id,
-        ], [
-            'kode_jenis.unique' => 'Kode Jenis "' . $request->kode_jenis . '" sudah ada.',
-            'jenis_obat.unique' => 'Jenis Obat "' . $request->jenis_obat . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('jenis-obat.index')

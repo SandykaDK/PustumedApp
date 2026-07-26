@@ -48,4 +48,30 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function penerimaanObat()
+    {
+        return $this->hasMany(PenerimaanObat::class, 'user_id');
+    }
+
+    public function pengeluaranObat()
+    {
+        return $this->hasMany(PengeluaranObat::class, 'user_id');
+    }
+
+    public function pemusnahanObat()
+    {
+        return $this->hasMany(PemusnahanObat::class, 'user_id');
+    }
+
+    public function hasTransactions(): bool
+    {
+        if (isset($this->penerimaan_obat_count, $this->pengeluaran_obat_count, $this->pemusnahan_obat_count)) {
+            return ($this->penerimaan_obat_count + $this->pengeluaran_obat_count + $this->pemusnahan_obat_count) > 0;
+        }
+
+        return $this->penerimaanObat()->exists()
+            || $this->pengeluaranObat()->exists()
+            || $this->pemusnahanObat()->exists();
+    }
 }

@@ -102,7 +102,7 @@ class PengeluaranObatController extends Controller
         $pengeluaranObats = $query->paginate($perPage);
 
         // Get data for dropdowns
-        $namaObats = NamaObat::all();
+        $namaObats = NamaObat::where('status', 'aktif')->orderBy('nama_obat')->get();
         $jenisobats = JenisObat::all();
         $satuanobats = SatuanObat::all();
         // For create modal: only active patients
@@ -132,7 +132,12 @@ class PengeluaranObatController extends Controller
             'dokter_id' => 'required|exists:dokter,id',
             'keterangan' => 'nullable|string',
             'details' => 'required|array',
-            'details.*.nama_obat_id' => 'required|exists:nama_obat,id',
+            'details.*.nama_obat_id' => ['required', 'exists:nama_obat,id', function ($attribute, $value, $fail) {
+                $namaObat = NamaObat::find($value);
+                if ($namaObat && $namaObat->status !== 'aktif') {
+                    $fail('Obat yang dipilih tidak aktif.');
+                }
+            }],
             'details.*.stok_obat_id' => 'required|exists:stok_obat,id',
             'details.*.jumlah_keluar' => 'required|integer|min:1',
             'details.*.satuan_id' => 'required|exists:satuan_obat,id',
@@ -209,7 +214,12 @@ class PengeluaranObatController extends Controller
             'dokter_id' => 'required|exists:dokter,id',
             'keterangan' => 'nullable|string',
             'details' => 'required|array',
-            'details.*.nama_obat_id' => 'required|exists:nama_obat,id',
+            'details.*.nama_obat_id' => ['required', 'exists:nama_obat,id', function ($attribute, $value, $fail) {
+                $namaObat = NamaObat::find($value);
+                if ($namaObat && $namaObat->status !== 'aktif') {
+                    $fail('Obat yang dipilih tidak aktif.');
+                }
+            }],
             'details.*.stok_obat_id' => 'required|exists:stok_obat,id',
             'details.*.jumlah_keluar' => 'required|integer|min:1',
             'details.*.satuan_id' => 'required|exists:satuan_obat,id',
@@ -379,7 +389,8 @@ class PengeluaranObatController extends Controller
     public function searchNamaObat(Request $request)
     {
         $q = $request->get('q', '');
-        $results = NamaObat::when($q, function($query) use ($q) {
+        $results = NamaObat::where('status', 'aktif')
+            ->when($q, function($query) use ($q) {
                 $query->where('nama_obat', 'like', "%{$q}%");
             })
             ->orderBy('nama_obat')

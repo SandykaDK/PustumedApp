@@ -137,29 +137,6 @@
                             <td>{{ $penerimaan->detailPenerimaanObat->count() }} item(s)</td>
                             <td>
                                 <div class="action-buttons">
-                                    <button type="button"
-                                        class="action-btn edit openEditModal"
-                                        title="Edit"
-                                        data-id="{{ $penerimaan->id }}"
-                                        data-no_batch="{{ $penerimaan->no_batch }}"
-                                        data-tanggal_penerimaan="{{ $penerimaan->tanggal_penerimaan }}"
-                                        data-keterangan="{{ $penerimaan->keterangan }}"
-                                        data-details="{{ json_encode($penerimaan->detailPenerimaanObat) }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                            viewBox="0 0 24 24" stroke-width="1.5"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m16.862 4.487 1.687-1.688
-                                                a1.875 1.875 0 1 1 2.652 2.652
-                                                L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13
-                                                L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897
-                                                l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75
-                                                A2.25 2.25 0 0 1 15.75 21H5.25
-                                                A2.25 2.25 0 0 1 3 18.75V8.25
-                                                A2.25 2.25 0 0 1 5.25 6H10" />
-                                        </svg>
-                                    </button>
-
                                     @if ($usageCheck['used'])
                                         <button type="button"
                                             class="action-btn delete"
@@ -355,75 +332,7 @@
             </div>
         </div>
 
-        <div id="editPenerimaanModal" class="modal hidden" aria-hidden="true">
-            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="editPenerimaanTitle">
-                <div class="modal-header">
-                    <h2 id="editPenerimaanTitle">Penerimaan Obat</h2>
-                    <button class="modal-close" id="closeEditPenerimaanModal" aria-label="Tutup">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
 
-                <div class="modal-body">
-                    @if ($errors->any() && session('edit_penerimaan_obat_id'))
-                        <div class="error-list modern">
-                            <ul>
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    <form id="editPenerimaanForm" action="" method="POST" class="form-component">
-                        @csrf
-                        <input type="hidden" name="_method" value="PUT">
-
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="user_edit">Nama Petugas</label>
-                                <input id="user_edit" type="text" value="{{ Auth::user()->name }}" readonly>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit_tanggal_penerimaan">Tanggal Penerimaan</label>
-                                <input id="edit_tanggal_penerimaan" type="date" name="tanggal_penerimaan" value="{{ old('tanggal_penerimaan') }}" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="edit_keterangan">Keterangan</label>
-                                <textarea id="edit_keterangan" name="keterangan" rows="2">{{ old('keterangan') }}</textarea>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
-                            <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #374151; font-weight: 600;">Detail Obat</h4>
-                            <div class="table-wrapper">
-                                <table class="detail-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Nama Obat</th>
-                                            <th>Jenis Obat</th>
-                                            <th>Tanggal Kadaluwarsa</th>
-                                            <th>Jumlah Masuk</th>
-                                            <th>Satuan</th>
-                                            <th>Lokasi Penyimpanan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="detailItemsEdit"></tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                    </form>
-                </div>
-
-                <div class="modal-actions modal-footer-persistent modal-footer-hidden" aria-hidden="true">
-                    <button type="button" class="btn-secondary" id="cancelEditPenerimaanModal">Batal</button>
-                    <button type="submit" class="btn-primary" form="editPenerimaanForm">Simpan</button>
-                </div>
-            </div>
-        </div>
 
     </div>
     </div>
@@ -434,8 +343,6 @@
     const satuanobats = @json($satuanobats);
 
     window.oldDetails = @json(old('details', []));
-    window.oldEditPenerimaanId = @json(session('edit_penerimaan_obat_id'));
-    window.oldInput = @json(session()->getOldInput());
 
     function getTodayDate() {
         const today = new Date();
@@ -659,108 +566,7 @@
             });
         @endif
 
-        const editModal = document.getElementById('editPenerimaanModal');
-        const openEditButtons = document.querySelectorAll('.openEditModal');
-        const closeEditBtn = document.getElementById('closeEditPenerimaanModal');
-        const cancelEditBtn = document.getElementById('cancelEditPenerimaanModal');
-        const editPenerimaanForm = document.getElementById('editPenerimaanForm');
-        const detailItemsEditDiv = document.getElementById('detailItemsEdit');
-        const addDetailEditBtn = document.getElementById('addDetailEdit');
-        let editDetailIndex = 0;
 
-        function openEditModal() {
-            if (!editModal) return;
-            editModal.classList.remove('hidden');
-            editModal.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-
-            editModal.querySelectorAll('input, select, textarea, button:not(.modal-close)').forEach(field => {
-                if (field.closest('.modal-footer-hidden')) {
-                    field.hidden = true;
-                    return;
-                }
-
-                if (field.tagName === 'BUTTON') {
-                    field.disabled = true;
-                    return;
-                }
-
-                field.disabled = true;
-            });
-        }
-
-        function closeEditModal() {
-            if (!editModal) return;
-            editModal.classList.add('hidden');
-            editModal.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = 'auto';
-        }
-
-        openEditButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                try {
-                    const id = this.dataset.id;
-                    const tanggal = this.dataset.tanggal_penerimaan;
-                    const keterangan = this.dataset.keterangan || '';
-                    const details = JSON.parse(this.dataset.details || '[]');
-
-                    editPenerimaanForm.action = '/penerimaan-obat/' + id;
-                    document.getElementById('edit_tanggal_penerimaan').value = tanggal || '';
-                    document.getElementById('edit_keterangan').value = keterangan;
-
-                    detailItemsEditDiv.innerHTML = '';
-                    editDetailIndex = 0;
-                    details.forEach((detail, idx) => {
-                        detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail, { showDelete: false }));
-                        editDetailIndex = idx + 1;
-                    });
-                    attachDetailEventListeners();
-
-                    openEditModal();
-                } catch (err) {
-                    console.error('edit button error:', err);
-                }
-            });
-        });
-
-        if (window.oldEditPenerimaanId) {
-            document.addEventListener('DOMContentLoaded', function() {
-                try {
-                    editPenerimaanForm.action = '/penerimaan-obat/' + window.oldEditPenerimaanId;
-
-                    if (window.oldInput && window.oldInput.tanggal_penerimaan) {
-                        document.getElementById('edit_tanggal_penerimaan').value = window.oldInput.tanggal_penerimaan;
-                    }
-
-                    if (window.oldInput && window.oldInput.keterangan) {
-                        document.getElementById('edit_keterangan').value = window.oldInput.keterangan;
-                    }
-
-                    if (window.oldDetails && window.oldDetails.length) {
-                        detailItemsEditDiv.innerHTML = '';
-                        window.oldDetails.forEach((detail, idx) => {
-                            detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(idx, detail, { showDelete: false }));
-                            editDetailIndex = idx + 1;
-                        });
-                        attachDetailEventListeners();
-                    }
-
-                    openEditModal();
-                } catch (err) {
-                    console.error('restore edit modal error:', err);
-                }
-            });
-        }
-
-        addDetailEditBtn && addDetailEditBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            detailItemsEditDiv.insertAdjacentHTML('beforeend', createDetailHTML(editDetailIndex));
-            editDetailIndex++;
-            attachDetailEventListeners();
-        });
-
-        closeEditBtn && closeEditBtn.addEventListener('click', closeEditModal);
-        cancelEditBtn && cancelEditBtn.addEventListener('click', closeEditModal);
 
         // Auto submit filter form with debounce.
         const filterForm = document.querySelector('.table-actions form[method="GET"]');

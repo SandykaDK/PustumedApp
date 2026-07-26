@@ -1,57 +1,59 @@
-<div class="top-summary-row {{ ($dashboardType ?? '') === 'kepala_pustu' ? 'top-summary-row-kepala' : '' }}">
+<div class="top-summary-row {{ ($dashboardType ?? '') === 'kepala_pustu' ? 'top-summary-row-kepala' : '' }}" style="display:flex; gap:1rem; align-items:flex-start;">
     <!-- Statistic Cards -->
-    <div style="background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+    <div style="flex:1; background: white; padding: 1rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; min-height: 180px; display:flex; flex-direction:column;">
         <h2 style="margin-bottom: 1rem; margin-top: 0;">Status Pemusnahan Obat</h2>
 
         <div class="stats-grid {{ ($dashboardType ?? '') === 'kepala_pustu' ? 'stats-grid-kepala' : '' }}">
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dikonfirmasi']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-                <div class="stat-icon orange">
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'sudah_dikonfirmasi']) }}" class="stat-card" style="background: #fef2f2; border: 1px solid #fecaca; text-decoration:none; color:inherit; display:flex; align-items:center; gap:0.9rem; padding: 1rem; border-radius: 0.75rem; min-height: 96px;">
+                <div class="stat-icon orange" style="background: #fee2e2; color: #b91c1c; flex-shrink:0;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                 </div>
-                <h3>Sudah Approve</h3>
-                <div class="value">{{ number_format(data_get($dashboardHighlights[2], 'value', 0)) }}</div>
+                <div>
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 1.05rem;">Sudah Approve</h3>
+                    <div class="value" style="font-size: 1.5rem;">{{ number_format(data_get($dashboardHighlights[2], 'value', 0)) }}</div>
+                </div>
             </a>
-            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_dikonfirmasi']) }}" class="stat-card" style="text-decoration:none; color:inherit;">
-                <div class="stat-icon purple">
+            <a href="{{ route('pemusnahan-obat.index', ['tab' => 'belum_dikonfirmasi']) }}" class="stat-card" style="background: #fff7ed; border: 1px solid #fdba74; text-decoration:none; color:inherit; display:flex; align-items:center; gap:0.9rem; padding: 1rem; border-radius: 0.75rem; min-height: 96px;">
+                <div class="stat-icon purple" style="background: #ffedd5; color: #c2410c; flex-shrink:0;">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                     </svg>
                 </div>
-                <h3>Belum Approve</h3>
-                <div class="value">{{ number_format(data_get($dashboardHighlights[3], 'value', 0)) }}</div>
+                <div>
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 1.05rem;">Belum Approve</h3>
+                    <div class="value" style="font-size: 1.5rem;">{{ number_format(data_get($dashboardHighlights[3], 'value', 0)) }}</div>
+                </div>
             </a>
         </div>
     </div>
 
-    <div class="info-section notifications">
-        <h2>Notifikasi</h2>
-        <div class="notification-scroll">
-            <div class="notification-stack">
-                @foreach($notifications ?? [] as $notification)
-                    <div class="notification-card {{ $notification['type'] ?? 'info' }}">
-                        <span class="notification-chip">
-                            {{ $notification['title'] ?? 'Notifikasi' }}
-                        </span>
-                        <strong>
-                            {{ $notification['name'] ?? '-' }}
-                        </strong>
-                        <small>
-                            @if(($notification['type'] ?? '') === 'danger' && !empty($notification['tanggal_kadaluwarsa']))
-                                {{ \Carbon\Carbon::parse($notification['tanggal_kadaluwarsa'])->translatedFormat('d M Y') }}
-                            @else
-                                {{ $notification['description'] ?? '' }}
-                            @endif
-                        </small>
-                    </div>
-                @endforeach
+    <div style="flex:1; background: white; padding: 1rem; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); min-height: 180px; display:flex; flex-direction:column;">
+        <h2 style="margin-bottom: 1rem; margin-top: 0;">Ringkasan Stok</h2>
 
-                @if(($notifications ?? collect())->isEmpty())
-                    <div class="notification-empty">
-                        Tidak ada notifikasi penting saat ini.
-                    </div>
-                @endif
+        <div class="stats-grid {{ ($dashboardType ?? '') === 'kepala_pustu' ? 'stats-grid-kepala' : '' }}">
+            <div class="stat-card" style="background: #fef2f2; border: 1px solid #fecaca; text-decoration:none; color:inherit; display:flex; align-items:center; gap:0.9rem; padding: 1rem; border-radius: 0.75rem; min-height: 96px;">
+                <div class="stat-icon red" style="background: #fee2e2; color: #b91c1c; flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.01M10.5 3.75 2.25 18a1.5 1.5 0 0 0 1.29 2.25h17.01A1.5 1.5 0 0 0 21.75 18L13.5 3.75a1.5 1.5 0 0 0-3 0Z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 1.05rem;">Mendekati Kadaluarsa</h3>
+                    <div class="value" style="font-size: 1.5rem;">{{ number_format($willExpireCount ?? 0) }}</div>
+                </div>
+            </div>
+            <div class="stat-card" style="background: #fff7ed; border: 1px solid #fdba74; text-decoration:none; color:inherit; display:flex; align-items:center; gap:0.9rem; padding: 1rem; border-radius: 0.75rem; min-height: 96px;">
+                <div class="stat-icon orange" style="background: #ffedd5; color: #c2410c; flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 style="margin:0 0 0.2rem 0; font-size: 1.05rem;">Stok Menipis</h3>
+                    <div class="value" style="font-size: 1.5rem;">{{ number_format($lowStockCount ?? 0) }}</div>
+                </div>
             </div>
         </div>
     </div>

@@ -12,14 +12,14 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $search = $request->search;
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // Whitelist allowed sortable columns to prevent SQL injection
-        $allowed = ['name', 'email', 'no_telepon', 'role', 'created_at'];
+        $allowed = ['id', 'name', 'email', 'no_telepon', 'role', 'created_at'];
         if (! in_array($sort, $allowed)) {
-            $sort = 'created_at';
+            $sort = 'id';
         }
 
         // Sanitize direction
@@ -27,7 +27,8 @@ class UserController extends Controller
 
         $status = $request->status;
 
-        $users = User::when($search, function ($query) use ($search) {
+        $users = User::withCount(['penerimaanObat', 'pengeluaranObat', 'pemusnahanObat'])
+            ->when($search, function ($query) use ($search) {
                 $query->where('name', 'like', "%$search%")
                       ->orWhere('email', 'like', "%$search%")
                       ->orWhere('no_telepon', 'like', "%$search%");
@@ -65,9 +66,26 @@ class UserController extends Controller
             'password'              => 'required|min:6|confirmed',
             'password_confirmation' => 'required_with:password|same:password',
         ], [
+            'name.required' => 'Nama harus diisi.',
+            'name.string' => 'Nama harus berupa teks.',
+            'name.max' => 'Nama tidak boleh lebih dari 255 karakter.',
             'name.unique' => 'Nama pengguna "' . $request->name . '" sudah digunakan.',
+            'email.required' => 'Email harus diisi.',
+            'email.email' => 'Email tidak valid.',
             'email.unique' => 'Email "' . $request->email . '" sudah digunakan.',
+            'no_telepon.required' => 'No telepon harus diisi.',
+            'no_telepon.string' => 'No telepon harus berupa teks.',
+            'no_telepon.max' => 'No telepon tidak boleh lebih dari 20 karakter.',
             'no_telepon.unique' => 'No. telepon "' . $request->no_telepon . '" sudah digunakan.',
+            'role.required' => 'Role harus dipilih.',
+            'role.in' => 'Role tidak valid.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+            'password.required' => 'Password harus diisi.',
+            'password.min' => 'Password minimal harus 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password_confirmation.required_with' => 'Konfirmasi password harus diisi ketika password diisi.',
+            'password_confirmation.same' => 'Konfirmasi password tidak cocok.',
         ]);
 
         if ($validator->fails()) {
@@ -169,6 +187,10 @@ class UserController extends Controller
         // Optional: cegah hapus diri sendiri
         if (auth()->id() === $user->id) {
             return back()->with('error', 'Tidak bisa menghapus akun sendiri');
+        }
+
+        if ($user->hasTransactions()) {
+            return back()->with('error', 'User tidak dapat dihapus karena sudah tercatat dalam transaksi.');
         }
 
         $user->delete();

@@ -101,14 +101,26 @@ class NamaObatController extends Controller
             return $blocked;
         }
 
+        $messages = [
+            'nama_obat.required' => 'Nama Obat harus diisi.',
+            'nama_obat.string' => 'Nama Obat harus berupa teks.',
+            'nama_obat.max' => 'Nama Obat tidak boleh lebih dari 255 karakter.',
+            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
+            'jenis_obat_id.required' => 'Jenis Obat harus dipilih.',
+            'jenis_obat_id.exists' => 'Jenis Obat tidak valid.',
+            'satuan_obat_id.required' => 'Satuan Obat harus dipilih.',
+            'satuan_obat_id.exists' => 'Satuan Obat tidak valid.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat',
             'jenis_obat_id'  => 'required|exists:jenis_obat,id',
             'satuan_obat_id'  => 'required|exists:satuan_obat,id',
             'lokasi_penyimpanan' => 'nullable|string|max:255',
-        ], [
-            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
-        ]);
+            'status' => 'required|in:aktif,nonaktif',
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('nama-obat.index')
@@ -126,6 +138,7 @@ class NamaObatController extends Controller
                 'jenis_obat_id' => $request->jenis_obat_id,
                 'satuan_obat_id' => $request->satuan_obat_id,
                 'lokasi_penyimpanan' => $request->lokasi_penyimpanan,
+                'status' => $request->input('status', 'aktif'),
             ]);
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23000') {
@@ -158,14 +171,26 @@ class NamaObatController extends Controller
             return $blocked;
         }
 
+        $messages = [
+            'nama_obat.required' => 'Nama Obat harus diisi.',
+            'nama_obat.string' => 'Nama Obat harus berupa teks.',
+            'nama_obat.max' => 'Nama Obat tidak boleh lebih dari 255 karakter.',
+            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
+            'jenis_obat_id.required' => 'Jenis Obat harus dipilih.',
+            'jenis_obat_id.exists' => 'Jenis Obat tidak valid.',
+            'satuan_obat_id.required' => 'Satuan Obat harus dipilih.',
+            'satuan_obat_id.exists' => 'Satuan Obat tidak valid.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama_obat'       => 'required|string|max:255|unique:nama_obat,nama_obat,' . $nama_obat->id,
             'jenis_obat_id'  => 'required|exists:jenis_obat,id',
             'satuan_obat_id'  => 'required|exists:satuan_obat,id',
             'lokasi_penyimpanan' => 'nullable|string|max:255',
-        ], [
-            'nama_obat.unique' => 'Nama Obat "' . $request->nama_obat . '" sudah ada.',
-        ]);
+            'status' => 'required|in:aktif,nonaktif',
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('nama-obat.index')
@@ -179,7 +204,12 @@ class NamaObatController extends Controller
             'jenis_obat_id',
             'satuan_obat_id',
             'lokasi_penyimpanan',
+            'status',
         ]);
+
+        if (! $request->has('status')) {
+            $data['status'] = 'aktif';
+        }
 
         // if jenis changed, generate new kode, otherwise keep existing
         if ((int)$request->jenis_obat_id !== (int)$nama_obat->jenis_obat_id) {

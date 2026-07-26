@@ -87,7 +87,7 @@
             <table class="satuan-obat-table">
                 <thead>
                 <tr>
-                    <th>No</th>
+                    <x-sortable-th column="id" label="No." />
                     <x-sortable-th column="kode_satuan" label="Kode Satuan" />
                     <x-sortable-th column="satuan_obat" label="Nama Satuan Obat" />
                     {{-- <x-sortable-th column="created_at" label="Tanggal Dibuat" /> --}}
@@ -234,13 +234,13 @@
                         @csrf
 
                         <div class="form-group">
-                            <label for="kode_satuan">Kode Satuan</label>
-                            <input id="kode_satuan" type="text" name="kode_satuan" value="{{ old('kode_satuan') }}" required>
+                            <label for="kode_satuan">Kode Satuan <span class="required-star">*</span></label>
+                            <input id="kode_satuan" type="text" name="kode_satuan" value="{{ old('kode_satuan', App\Models\SatuanObat::generateKode()) }}" readonly tabindex="-1">
                         </div>
 
                         <div class="form-group">
-                            <label for="satuan_obat">Nama Satuan Obat</label>
-                            <input id="satuan_obat" type="text" name="satuan_obat" value="{{ old('satuan_obat') }}" required>
+                            <label for="satuan_obat">Nama Satuan Obat <span class="required-star">*</span></label>
+                            <input id="satuan_obat" type="text" name="satuan_obat" value="{{ old('satuan_obat') }}">
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -278,13 +278,13 @@
                         <input type="hidden" name="_method" value="PUT">
 
                         <div class="form-group">
-                            <label for="edit_kode_satuan">Kode Satuan</label>
-                            <input id="edit_kode_satuan" type="text" name="kode_satuan" value="{{ old('kode_satuan') }}" required>
+                            <label for="edit_kode_satuan">Kode Satuan <span class="required-star">*</span></label>
+                            <input id="edit_kode_satuan" type="text" name="kode_satuan" value="{{ old('kode_satuan') }}" readonly tabindex="-1">
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_satuan_obat">Nama Satuan Obat</label>
-                            <input id="edit_satuan_obat" type="text" name="satuan_obat" value="{{ old('satuan_obat') }}" required>
+                            <label for="edit_satuan_obat">Nama Satuan Obat <span class="required-star">*</span></label>
+                            <input id="edit_satuan_obat" type="text" name="satuan_obat" value="{{ old('satuan_obat') }}">
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -346,7 +346,10 @@
             document.body.style.overflow = 'auto';
         }
 
-        openBtn && openBtn.addEventListener('click', openModal);
+        openBtn && openBtn.addEventListener('click', function() {
+            openModal();
+            initCodeField();
+        });
         closeBtn && closeBtn.addEventListener('click', closeModal);
         cancelBtn && cancelBtn.addEventListener('click', closeModal);
 
@@ -382,6 +385,13 @@
             editForm.action = '/satuan-obat/' + data.id;
             document.getElementById('edit_kode_satuan').value = data.kode_satuan || '';
             document.getElementById('edit_satuan_obat').value = data.satuan_obat || '';
+        }
+
+        function initCodeField() {
+            const createCodeInput = document.getElementById('kode_satuan');
+            if (createCodeInput && !createCodeInput.value) {
+                createCodeInput.value = @json(App\Models\SatuanObat::generateKode());
+            }
         }
 
         openEditButtons.forEach(btn => {

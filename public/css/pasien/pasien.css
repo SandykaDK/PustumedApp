@@ -388,6 +388,22 @@
     transform: scale(0.95);
 }
 
+/* Disabled action button appearance (make it visually distinct) */
+.action-btn.disabled,
+.action-btn:disabled {
+    background: #e5e7eb !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+    opacity: 0.65 !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.action-btn.disabled svg,
+.action-btn:disabled svg {
+    opacity: 0.6;
+}
+
 /* Status badge (match daftar_user styles) */
 .status-badge {
     display: inline-block;

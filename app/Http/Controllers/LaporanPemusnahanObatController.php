@@ -25,6 +25,7 @@ class LaporanPemusnahanObatController extends Controller
             'namaObat',
             'detailPemusnahanObat.pemusnahan.user',
             'detailPemusnahanObat.pemusnahan.approver',
+            'detailPemusnahanObat.pemusnahan.details',
         ])
             ->whereDate('tanggal_kadaluwarsa', '<=', $limit->toDateString())
             ->where(function ($q) {
@@ -74,10 +75,13 @@ class LaporanPemusnahanObatController extends Controller
             }
 
             foreach ($pemusnahanRecords as $pemusnahan) {
+                // Hitung total jumlah dari semua detail pemusnahan untuk pemusnahan ini
+                $totalJumlah = $pemusnahan->details()->sum('jumlah') ?? 0;
+
                 $reportRows->push([
                     'nama_obat' => $namaObat,
                     'tanggal_kadaluwarsa' => $tglKadaluwarsa,
-                    'jumlah' => $stok->stok,
+                    'jumlah' => $totalJumlah,
                     'tanggal_pemusnahan' => optional($pemusnahan->tanggal_pemusnahan)->translatedFormat('d F Y'),
                     'tanggal_pemusnahan_sort' => optional($pemusnahan->tanggal_pemusnahan)->format('Y-m-d H:i:s'),
                     'pengaju' => $pemusnahan->user->name ?? 'N/A',

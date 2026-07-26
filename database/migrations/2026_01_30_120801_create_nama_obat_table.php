@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('jenis_obat_id')->constrained('jenis_obat', 'id');
             $table->foreignId('satuan_obat_id')->constrained('satuan_obat', 'id');
             $table->string('lokasi_penyimpanan')->nullable();
+            $table->enum('status', ['aktif', 'nonaktif']);
             $table->timestamps();
         });
     }

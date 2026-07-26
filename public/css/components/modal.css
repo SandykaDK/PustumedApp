@@ -113,9 +113,21 @@
     background: #fff7f7;
     border: 1px solid #fecaca;
     color: #b91c1c;
-    padding: 10px 12px;
+    padding: 8px 14px;
     border-radius: 8px;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
+    font-size: 0.94rem;
+}
+
+.error-list.modern ul {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc inside;
+}
+
+.error-list.modern li {
+    margin-bottom: 4px;
+    line-height: 1.35;
 }
 
 /* Footer actions */

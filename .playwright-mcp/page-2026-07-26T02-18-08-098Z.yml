@@ -1,0 +1,163 @@
+- generic [active] [ref=f1e1]:
+  - complementary [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - link "Pustumed" [ref=f1e4] [cursor=pointer]:
+        - /url: http://127.0.0.1:8000/dashboard
+        - img "Pustumed Logo" [ref=f1e5]
+      - button "Collapse Sidebar" [ref=f1e8] [cursor=pointer]
+    - generic [ref=f1e11]:
+      - list [ref=f1e12]:
+        - listitem [ref=f1e13]:
+          - link "Dashboard" [ref=f1e14] [cursor=pointer]:
+            - /url: http://127.0.0.1:8000/dashboard
+      - generic [ref=f1e18]:
+        - button "Modul Master" [ref=f1e19] [cursor=pointer]:
+          - generic [ref=f1e20]: Master
+        - list [ref=f1e26]:
+          - listitem [ref=f1e27]:
+            - link "Daftar User" [ref=f1e28] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/users
+          - listitem [ref=f1e32]:
+            - link "Daftar Dokter" [ref=f1e33] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/dokter
+          - listitem [ref=f1e37]:
+            - link "Daftar Obat" [ref=f1e38] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/nama-obat
+      - generic [ref=f1e42]:
+        - button "Modul Transaksi" [ref=f1e43] [cursor=pointer]:
+          - generic [ref=f1e44]: Transaksi
+        - list [ref=f1e50]:
+          - listitem [ref=f1e51]:
+            - link "Pemusnahan Obat" [ref=f1e52] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/pemusnahan-obat
+          - listitem
+      - generic [ref=f1e56]:
+        - button "Modul Laporan" [ref=f1e57] [cursor=pointer]:
+          - generic [ref=f1e58]: Laporan
+        - list [ref=f1e64]:
+          - listitem [ref=f1e65]:
+            - link "Permintaan Obat" [ref=f1e66] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/permintaan-obat
+              - generic [ref=f1e69]: Laporan Permintaan Obat
+          - listitem [ref=f1e70]:
+            - link "Laporan Obat Kadaluwarsa" [ref=f1e71] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/laporan-obat-kadaluwarsa
+          - listitem [ref=f1e75]:
+            - link "Laporan Pemusnahan Obat" [ref=f1e76] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/laporan-pemusnahan-obat
+  - generic [ref=f1e80]:
+    - navigation [ref=f1e81]:
+      - generic [ref=f1e83]:
+        - generic:
+          - heading [level=2]
+        - button "User 1" [ref=f1e86] [cursor=pointer]
+    - generic [ref=f1e92]:
+      - generic [ref=f1e93]:
+        - generic [ref=f1e94]:
+          - heading "Dashboard Kepala Puskesmas Pembantu" [level=1] [ref=f1e95]
+          - paragraph [ref=f1e96]: Ringkasan kondisi operasional, status stok, dan aktivitas layanan untuk mendukung pengambilan keputusan.
+        - generic [ref=f1e97]: "Role: Kepala Pustu"
+      - generic [ref=f1e98]:
+        - generic [ref=f1e99]:
+          - heading "Status Pemusnahan Obat" [level=2] [ref=f1e100]
+          - generic [ref=f1e101]:
+            - link "Sudah Approve 0" [ref=f1e102] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/pemusnahan-obat?tab=sudah_dikonfirmasi
+              - generic [ref=f1e106]:
+                - heading "Sudah Approve" [level=3] [ref=f1e107]
+                - generic [ref=f1e108]: "0"
+            - link "Belum Approve 0" [ref=f1e109] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/pemusnahan-obat?tab=belum_dikonfirmasi
+              - generic [ref=f1e113]:
+                - heading "Belum Approve" [level=3] [ref=f1e114]
+                - generic [ref=f1e115]: "0"
+        - generic [ref=f1e116]:
+          - heading "Ringkasan Stok" [level=2] [ref=f1e117]
+          - generic [ref=f1e118]:
+            - generic [ref=f1e123]:
+              - heading "Mendekati Kadaluarsa" [level=3] [ref=f1e124]
+              - generic [ref=f1e125]: "4"
+            - generic [ref=f1e130]:
+              - heading "Stok Menipis" [level=3] [ref=f1e131]
+              - generic [ref=f1e132]: "0"
+      - generic [ref=f1e134]:
+        - generic [ref=f1e136]:
+          - heading "Penerimaan Obat (12 bulan)" [level=4] [ref=f1e137]
+          - generic [ref=f1e138]:
+            - generic [ref=f1e139]: "Tahun:"
+            - combobox "Tahun:" [ref=f1e140] [cursor=pointer]:
+              - option "2026" [selected]
+              - option "2025"
+              - option "2024"
+              - option "2023"
+              - option "2022"
+              - option "2021"
+        - generic [ref=f1e143]:
+          - heading "Pengeluaran Obat (12 bulan)" [level=4] [ref=f1e144]
+          - generic [ref=f1e145]:
+            - generic [ref=f1e146]: "Tahun:"
+            - combobox "Tahun:" [ref=f1e147] [cursor=pointer]:
+              - option "2026" [selected]
+              - option "2025"
+              - option "2024"
+              - option "2023"
+              - option "2022"
+              - option "2021"
+      - generic [ref=f1e149]:
+        - generic [ref=f1e151]:
+          - heading "Obat Paling Sering Digunakan" [level=3] [ref=f1e152]
+          - generic [ref=f1e153]:
+            - generic [ref=f1e154]: "Tahun:"
+            - combobox "Tahun:" [ref=f1e155] [cursor=pointer]:
+              - option "2026" [selected]
+              - option "2025"
+              - option "2024"
+              - option "2023"
+              - option "2022"
+              - option "2021"
+        - generic [ref=f1e157]:
+          - generic [ref=f1e158]:
+            - heading "Klasifikasi Fast / Slow Moving" [level=2] [ref=f1e159]
+            - generic [ref=f1e160]:
+              - generic [ref=f1e161]: "Tahun:"
+              - combobox "Tahun:" [ref=f1e162] [cursor=pointer]:
+                - option "2026" [selected]
+                - option "2025"
+                - option "2024"
+                - option "2023"
+                - option "2022"
+                - option "2021"
+          - paragraph [ref=f1e163]: Berdasarkan jumlah obat yang keluar selama 12 bulan.
+          - table [ref=f1e165]:
+            - rowgroup [ref=f1e166]:
+              - row [ref=f1e167]:
+                - columnheader "Fast Moving" [ref=f1e168]
+                - columnheader "Keluar" [ref=f1e169]
+                - columnheader "Slow Moving" [ref=f1e170]
+                - columnheader "Keluar" [ref=f1e171]
+            - rowgroup [ref=f1e172]:
+              - row [ref=f1e173]:
+                - cell "Acyclovir 400 mg" [ref=f1e174]
+                - cell "249" [ref=f1e175]
+                - cell "Amoksisilin 500 mg" [ref=f1e176]
+                - cell "197" [ref=f1e177]
+              - row [ref=f1e178]:
+                - cell "Amlodipin 5 mg / 10 mg" [ref=f1e179]
+                - cell "245" [ref=f1e180]
+                - cell "Albendazole Tab" [ref=f1e181]
+                - cell "211" [ref=f1e182]
+              - row [ref=f1e183]:
+                - cell "Allopurinol 100 mg" [ref=f1e184]
+                - cell "245" [ref=f1e185]
+                - cell "Acyclovir Cream" [ref=f1e186]
+                - cell "234" [ref=f1e187]
+              - row [ref=f1e188]:
+                - cell "Acethylsisteine capsule" [ref=f1e189]
+                - cell "244" [ref=f1e190]
+                - cell "Aminophylline 200 mg" [ref=f1e191]
+                - cell "236" [ref=f1e192]
+              - row [ref=f1e193]:
+                - cell "Aminophylline injeksi" [ref=f1e194]
+                - cell "243" [ref=f1e195]
+                - cell "Ambroxol Tab" [ref=f1e196]
+                - cell "242" [ref=f1e197]

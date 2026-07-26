@@ -15,6 +15,11 @@ class NamaObat extends Model
         'jenis_obat_id',
         'satuan_obat_id',
         'lokasi_penyimpanan',
+        'status'
+    ];
+
+    protected $attributes = [
+        'status' => 'aktif',
     ];
 
     public $timestamps = true;

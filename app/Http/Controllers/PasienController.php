@@ -13,14 +13,14 @@ class PasienController extends Controller
     {
         $search = $request->search;
         $status = $request->status;
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['nama', 'alamat', 'no_telepon', 'jenis_kelamin', 'golongan_darah', 'no_bpjs', 'created_at'];
+        $allowed = ['id', 'nama', 'nik', 'alamat', 'no_telepon', 'jenis_kelamin', 'golongan_darah', 'no_bpjs', 'created_at'];
         if (! in_array($sort, $allowed)) {
-            $sort = 'created_at';
+            $sort = 'id';
         }
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
@@ -62,6 +62,33 @@ class PasienController extends Controller
 
     public function store(Request $request)
     {
+        $messages = [
+            'nama.required' => 'Nama Pasien harus diisi.',
+            'nama.string' => 'Nama Pasien harus berupa teks.',
+            'nama.max' => 'Nama Pasien tidak boleh lebih dari 255 karakter.',
+            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
+            'nik.required' => 'NIK harus diisi.',
+            'nik.string' => 'NIK harus berupa teks.',
+            'nik.max' => 'NIK tidak boleh lebih dari 255 karakter.',
+            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
+            'alamat.required' => 'Alamat harus diisi.',
+            'alamat.string' => 'Alamat harus berupa teks.',
+            'alamat.max' => 'Alamat tidak boleh lebih dari 255 karakter.',
+            'jenis_kelamin.required' => 'Jenis Kelamin harus dipilih.',
+            'jenis_kelamin.in' => 'Jenis Kelamin tidak valid.',
+            'golongan_darah.required' => 'Golongan Darah harus dipilih.',
+            'golongan_darah.in' => 'Golongan Darah tidak valid.',
+            'no_telepon.required' => 'No. Telepon harus diisi.',
+            'no_telepon.string' => 'No. Telepon harus berupa teks.',
+            'no_telepon.max' => 'No. Telepon tidak boleh lebih dari 255 karakter.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'no_bpjs.string' => 'No. BPJS harus berupa teks.',
+            'no_bpjs.max' => 'No. BPJS tidak boleh lebih dari 255 karakter.',
+            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama'              => 'required|string|max:255|unique:pasien,nama',
             'nik'               => 'required|string|max:255|unique:pasien,nik',
@@ -71,12 +98,7 @@ class PasienController extends Controller
             'no_telepon'        => 'required|string|max:255|unique:pasien,no_telepon',
             'no_bpjs'           => 'nullable|string|max:255|unique:pasien,no_bpjs',
             'status'            => 'required|in:aktif,non-aktif',
-        ], [
-            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
-            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
-            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
-            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('pasien.index')
@@ -116,6 +138,33 @@ class PasienController extends Controller
 
     public function update(Request $request, Pasien $pasien)
     {
+        $messages = [
+            'nama.required' => 'Nama Pasien harus diisi.',
+            'nama.string' => 'Nama Pasien harus berupa teks.',
+            'nama.max' => 'Nama Pasien tidak boleh lebih dari 255 karakter.',
+            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
+            'nik.required' => 'NIK harus diisi.',
+            'nik.string' => 'NIK harus berupa teks.',
+            'nik.max' => 'NIK tidak boleh lebih dari 255 karakter.',
+            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
+            'alamat.required' => 'Alamat harus diisi.',
+            'alamat.string' => 'Alamat harus berupa teks.',
+            'alamat.max' => 'Alamat tidak boleh lebih dari 255 karakter.',
+            'jenis_kelamin.required' => 'Jenis Kelamin harus dipilih.',
+            'jenis_kelamin.in' => 'Jenis Kelamin tidak valid.',
+            'golongan_darah.required' => 'Golongan Darah harus dipilih.',
+            'golongan_darah.in' => 'Golongan Darah tidak valid.',
+            'no_telepon.required' => 'No. Telepon harus diisi.',
+            'no_telepon.string' => 'No. Telepon harus berupa teks.',
+            'no_telepon.max' => 'No. Telepon tidak boleh lebih dari 255 karakter.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'no_bpjs.string' => 'No. BPJS harus berupa teks.',
+            'no_bpjs.max' => 'No. BPJS tidak boleh lebih dari 255 karakter.',
+            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama'          => 'required|string|max:255|unique:pasien,nama,' . $pasien->id,
             'nik'           => 'required|string|max:255|unique:pasien,nik,' . $pasien->id,
@@ -125,12 +174,7 @@ class PasienController extends Controller
             'no_telepon'    => 'required|string|max:255|unique:pasien,no_telepon,' . $pasien->id,
             'no_bpjs'       => 'nullable|string|max:255|unique:pasien,no_bpjs,' . $pasien->id,
             'status'        => 'required|in:aktif,non-aktif',
-        ], [
-            'nama.unique' => 'Nama Pasien "' . $request->nama . '" sudah ada.',
-            'nik.unique' => 'NIK "' . $request->nik . '" sudah ada.',
-            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
-            'no_bpjs.unique' => 'No. BPJS "' . $request->no_bpjs . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('pasien.index')
@@ -167,6 +211,13 @@ class PasienController extends Controller
 
     public function destroy(Pasien $pasien)
     {
+        // Prevent deletion if pasien is used in any pengeluaran (transactions)
+        if ($pasien->pengeluaranObat()->exists()) {
+            return redirect()
+                ->route('pasien.index')
+                ->with('error', 'Data pasien tidak bisa dihapus karena sudah digunakan di transaksi.');
+        }
+
         $pasien->delete();
 
         return redirect()

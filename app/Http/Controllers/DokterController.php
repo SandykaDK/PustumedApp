@@ -13,14 +13,14 @@ class DokterController extends Controller
     {
         $search = $request->search;
         $status = $request->get('status', 'semua');
-        $sort = $request->sort ?? 'created_at';
-        $direction = $request->direction ?? 'desc';
+        $sort = $request->sort ?? 'id';
+        $direction = $request->direction ?? 'asc';
         $perPage = $request->per_page ?? 10;
 
         // whitelist allowed sortable columns
-        $allowed = ['nama', 'alamat', 'jenis_kelamin', 'no_telepon', 'email', 'status', 'no_bpjs', 'created_at'];
+        $allowed = ['id', 'nama', 'alamat', 'jenis_kelamin', 'no_telepon', 'email', 'status', 'no_bpjs', 'created_at'];
         if (! in_array($sort, $allowed)) {
-            $sort = 'created_at';
+            $sort = 'id';
         }
         $direction = strtolower($direction) === 'asc' ? 'asc' : 'desc';
 
@@ -54,6 +54,27 @@ class DokterController extends Controller
 
     public function store(Request $request)
     {
+        $messages = [
+            'nama.required' => 'Nama Dokter harus diisi.',
+            'nama.string' => 'Nama Dokter harus berupa teks.',
+            'nama.max' => 'Nama Dokter tidak boleh lebih dari 255 karakter.',
+            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
+            'alamat.required' => 'Alamat harus diisi.',
+            'alamat.string' => 'Alamat harus berupa teks.',
+            'alamat.max' => 'Alamat tidak boleh lebih dari 255 karakter.',
+            'jenis_kelamin.required' => 'Jenis Kelamin harus dipilih.',
+            'jenis_kelamin.in' => 'Jenis Kelamin tidak valid.',
+            'no_telepon.required' => 'No. Telepon harus diisi.',
+            'no_telepon.string' => 'No. Telepon harus berupa teks.',
+            'no_telepon.max' => 'No. Telepon tidak boleh lebih dari 255 karakter.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'email.required' => 'Email harus diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama'         => 'required|string|max:255|unique:dokter,nama',
             'alamat'       => 'required|string|max:255',
@@ -61,11 +82,7 @@ class DokterController extends Controller
             'no_telepon'   => 'required|string|max:255|unique:dokter,no_telepon',
             'email'        => 'required|email|unique:dokter,email',
             'status'       => 'required|in:aktif,nonaktif',
-        ], [
-            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
-            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
-            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('dokter.index')
@@ -103,6 +120,27 @@ class DokterController extends Controller
 
     public function update(Request $request, Dokter $dokter)
     {
+        $messages = [
+            'nama.required' => 'Nama Dokter harus diisi.',
+            'nama.string' => 'Nama Dokter harus berupa teks.',
+            'nama.max' => 'Nama Dokter tidak boleh lebih dari 255 karakter.',
+            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
+            'alamat.required' => 'Alamat harus diisi.',
+            'alamat.string' => 'Alamat harus berupa teks.',
+            'alamat.max' => 'Alamat tidak boleh lebih dari 255 karakter.',
+            'jenis_kelamin.required' => 'Jenis Kelamin harus dipilih.',
+            'jenis_kelamin.in' => 'Jenis Kelamin tidak valid.',
+            'no_telepon.required' => 'No. Telepon harus diisi.',
+            'no_telepon.string' => 'No. Telepon harus berupa teks.',
+            'no_telepon.max' => 'No. Telepon tidak boleh lebih dari 255 karakter.',
+            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
+            'email.required' => 'Email harus diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
+            'status.required' => 'Status akun harus dipilih.',
+            'status.in' => 'Status akun tidak valid.',
+        ];
+
         $validator = Validator::make($request->all(), [
             'nama'         => 'required|string|max:255|unique:dokter,nama,' . $dokter->id,
             'alamat'       => 'required|string|max:255',
@@ -110,11 +148,7 @@ class DokterController extends Controller
             'no_telepon'   => 'required|string|max:255|unique:dokter,no_telepon,' . $dokter->id,
             'email'        => 'required|email|unique:dokter,email,' . $dokter->id,
             'status'       => 'required|in:aktif,nonaktif',
-        ], [
-            'nama.unique' => 'Nama Dokter "' . $request->nama . '" sudah ada.',
-            'no_telepon.unique' => 'No. Telepon "' . $request->no_telepon . '" sudah ada.',
-            'email.unique' => 'Email "' . $request->email . '" sudah ada.',
-        ]);
+        ], $messages);
 
         if ($validator->fails()) {
             return redirect()->route('dokter.index')

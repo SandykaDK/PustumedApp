@@ -9,7 +9,7 @@ class NamaObatSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('nama_obat')->insert([
+        $rows = [
             ['kode_obat' => 'AB-001', 'nama_obat' => 'Acethylsisteine capsule', 'jenis_obat_id' => '1', 'satuan_obat_id' => '1', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
             ['kode_obat' => 'VT-002', 'nama_obat' => 'Acyclovir 400 mg', 'jenis_obat_id' => '2', 'satuan_obat_id' => '2', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
             ['kode_obat' => 'AL-003', 'nama_obat' => 'Acyclovir Cream', 'jenis_obat_id' => '3', 'satuan_obat_id' => '3', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
@@ -108,6 +108,12 @@ class NamaObatSeeder extends Seeder
             ['kode_obat' => 'AB-096', 'nama_obat' => 'Kasa Pembalut 4 m x 15 cm', 'jenis_obat_id' => '1', 'satuan_obat_id' => '16', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
             ['kode_obat' => 'VT-097', 'nama_obat' => 'Kasa Pembalut 4 m x 3 cm', 'jenis_obat_id' => '2', 'satuan_obat_id' => '16', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
             ['kode_obat' => 'AL-098', 'nama_obat' => 'Plester Coklat / Putih', 'jenis_obat_id' => '3', 'satuan_obat_id' => '16', 'lokasi_penyimpanan' => 'Rak A1', 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        ];
+
+        DB::table('nama_obat')->insert(array_map(static function (array $row): array {
+            $row['status'] = 'aktif';
+
+            return $row;
+        }, $rows));
     }
 }

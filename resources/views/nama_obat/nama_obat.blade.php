@@ -43,6 +43,52 @@
         .status-unknown {
             background-color: #6b7280; /* gray */
         }
+        .status-switch-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-switch {
+            position: relative;
+            display: inline-flex;
+            width: 44px;
+            height: 24px;
+        }
+        .status-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .status-switch-slider {
+            position: absolute;
+            inset: 0;
+            cursor: pointer;
+            background-color: #d1d5db;
+            border-radius: 999px;
+            transition: background-color 0.2s ease;
+        }
+        .status-switch-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+        .status-switch input:checked + .status-switch-slider {
+            background-color: #16a34a;
+        }
+        .status-switch input:checked + .status-switch-slider::before {
+            transform: translateX(20px);
+        }
+        .status-switch-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
     </style>
 </head>
 <body>
@@ -141,6 +187,7 @@
                     <x-sortable-th column="satuan_obat_id" label="Satuan Obat" />
                     <x-sortable-th column="lokasi_penyimpanan" label="Lokasi Penyimpanan" />
                     <x-sortable-th column="stok" label="Stok" />
+                    <th>Status</th>
                     <th>Action</th>
                 </tr>
                 </thead>
@@ -160,7 +207,12 @@
                                 @endphp
                                 {{ $totalStok }}
                             </td>
-                            {{-- <td>{{ $namaobat->created_at->format('d M Y') }}</td> --}}
+                            <td>
+                                @php
+                                    $statusClass = $namaobat->status === 'aktif' ? 'status-available' : 'status-unavailable';
+                                @endphp
+                                <span class="status-badge {{ $statusClass }}">{{ $namaobat->status === 'aktif' ? 'Aktif' : 'Nonaktif' }}</span>
+                            </td>
                             <td>
                                 <div class="action-buttons">
                                     <!-- VIEW stock details (modal) -->
@@ -184,7 +236,8 @@
                                             data-nama_obat="{{ $namaobat->nama_obat }}"
                                             data-jenis_id="{{ $namaobat->jenis_obat_id }}"
                                             data-satuan_id="{{ $namaobat->satuan_obat_id }}"
-                                            data-lokasi="{{ $namaobat->lokasi_penyimpanan }}">
+                                            data-lokasi="{{ $namaobat->lokasi_penyimpanan }}"
+                                            data-status="{{ $namaobat->status }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
@@ -263,7 +316,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="empty">Tidak ada data obat</td>
+                            <td colspan="8" class="empty">Tidak ada data obat</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -338,8 +391,8 @@
 
                         <div class="form-row" style="display:flex;gap:12px;">
                             <div class="form-group" style="flex:1;">
-                                <label for="create_jenis_obat_id">Jenis Obat</label>
-                                <select id="create_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
+                                <label for="create_jenis_obat_id">Jenis Obat <span class="required-star">*</span></label>
+                                <select id="create_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat">
                                     <option value="">Pilih Jenis Obat</option>
                                     @foreach(($jenisobats ?? []) as $jenis)
                                         <option value="{{ $jenis->id }}" {{ old('jenis_obat_id') == $jenis->id ? 'selected' : '' }}>{{ $jenis->jenis_obat }}</option>
@@ -354,13 +407,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="nama_obat">Nama Obat</label>
-                            <input id="nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
+                            <label for="nama_obat">Nama Obat <span class="required-star">*</span></label>
+                            <input id="nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="create_satuan_obat_id">Satuan Obat</label>
-                            <select id="create_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat" required>
+                            <label for="create_satuan_obat_id">Satuan Obat <span class="required-star">*</span></label>
+                            <select id="create_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat">
                                 <option value="">Pilih Satuan Obat</option>
                                 @foreach(($satuanobats ?? []) as $satuan)
                                     <option value="{{ $satuan->id }}" {{ old('satuan_obat_id') == $satuan->id ? 'selected' : '' }}>{{ $satuan->satuan_obat }}</option>
@@ -369,8 +422,20 @@
                         </div>
 
                         <div class="form-group">
+                            <label>Status Obat</label>
+                            <div class="status-switch-row">
+                                <label class="status-switch" for="create_status_toggle">
+                                    <input id="create_status_toggle" type="checkbox" value="aktif" {{ old('status', 'aktif') === 'aktif' ? 'checked' : '' }}>
+                                    <span class="status-switch-slider"></span>
+                                </label>
+                                <span id="create_status_label" class="status-switch-text">{{ old('status', 'aktif') === 'aktif' ? 'Aktif' : 'Nonaktif' }}</span>
+                                <input type="hidden" id="create_status_hidden" name="status" value="{{ old('status', 'aktif') }}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="lokasi_penyimpanan">Lokasi Penyimpanan</label>
-                            <input id="lokasi_penyimpanan" type="text" name="lokasi_penyimpanan" value="{{ old('lokasi_penyimpanan') }}" required>
+                            <input id="lokasi_penyimpanan" type="text" name="lokasi_penyimpanan" value="{{ old('lokasi_penyimpanan') }}">
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -409,8 +474,8 @@
 
                         <div class="form-row" style="display:flex;gap:12px;">
                             <div class="form-group" style="flex:1;">
-                                <label for="edit_jenis_obat_id">Jenis Obat</label>
-                                <select id="edit_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat" required>
+                                <label for="edit_jenis_obat_id">Jenis Obat <span class="required-star">*</span></label>
+                                <select id="edit_jenis_obat_id" name="jenis_obat_id" class="js-modal-select2" data-placeholder="Pilih Jenis Obat">
                                     <option value="">Pilih Jenis Obat</option>
                                     @foreach(($jenisobats ?? []) as $jenis)
                                         <option value="{{ $jenis->id }}">{{ $jenis->jenis_obat }}</option>
@@ -425,13 +490,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_nama_obat">Nama Obat</label>
-                            <input id="edit_nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}" required>
+                            <label for="edit_nama_obat">Nama Obat <span class="required-star">*</span></label>
+                            <input id="edit_nama_obat" type="text" name="nama_obat" value="{{ old('nama_obat') }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_satuan_obat_id">Satuan Obat</label>
-                            <select id="edit_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat" required>
+                            <label for="edit_satuan_obat_id">Satuan Obat <span class="required-star">*</span></label>
+                            <select id="edit_satuan_obat_id" name="satuan_obat_id" class="js-modal-select2" data-placeholder="Pilih Satuan Obat">
                                 <option value="">Pilih Satuan Obat</option>
                                 @foreach(($satuanobats ?? []) as $satuan)
                                     <option value="{{ $satuan->id }}">{{ $satuan->satuan_obat }}</option>
@@ -440,8 +505,20 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="edit_lokasi_penyimpanan">Lokasi Penyimpanan</label>
-                            <input id="edit_lokasi_penyimpanan" type="text" name="lokasi_penyimpanan" value="{{ old('lokasi_penyimpanan') }}" required>
+                            <label>Status Obat</label>
+                            <div class="status-switch-row">
+                                <label class="status-switch" for="edit_status_toggle">
+                                    <input id="edit_status_toggle" type="checkbox" value="aktif">
+                                    <span class="status-switch-slider"></span>
+                                </label>
+                                <span id="edit_status_label" class="status-switch-text">Aktif</span>
+                                <input type="hidden" id="edit_status_hidden" name="status" value="aktif">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit_lokasi_penyimpanan">Lokasi Penyimpanan <span class="required-star">*</span></label>
+                            <input id="edit_lokasi_penyimpanan" type="text" name="lokasi_penyimpanan" value="{{ old('lokasi_penyimpanan') }}">
                         </div>
 
                         <div class="form-actions modal-actions">
@@ -525,9 +602,39 @@
             });
         }
 
+        function syncStatusToggle(toggle, hidden, label) {
+            if (!toggle || !hidden) return;
+            const isActive = toggle.checked;
+            hidden.value = isActive ? 'aktif' : 'nonaktif';
+            if (label) {
+                label.textContent = isActive ? 'Aktif' : 'Nonaktif';
+            }
+        }
+
+        function bindStatusToggleToForm(form, toggle, hidden, label) {
+            if (!form || !toggle || !hidden) return;
+            toggle.addEventListener('change', function() {
+                syncStatusToggle(toggle, hidden, label);
+            });
+            form.addEventListener('submit', function() {
+                syncStatusToggle(toggle, hidden, label);
+            });
+            syncStatusToggle(toggle, hidden, label);
+        }
+
+        const createStatusToggle = document.getElementById('create_status_toggle');
+        const createStatusHidden = document.getElementById('create_status_hidden');
+        const createStatusLabel = document.getElementById('create_status_label');
+        if (createForm) {
+            bindStatusToggleToForm(createForm, createStatusToggle, createStatusHidden, createStatusLabel);
+        }
+
         function clearCreateForm() {
             if (!createForm) return;
             createForm.reset();
+            if (createStatusToggle && createStatusHidden) {
+                syncStatusToggle(createStatusToggle, createStatusHidden, createStatusLabel);
+            }
 
             if (window.jQuery) {
                 createForm.querySelectorAll('select').forEach(select => {
@@ -571,6 +678,12 @@
         const closeEditBtn = document.getElementById('closeEditNamaObatModal');
         const cancelEditBtn = document.getElementById('cancelEditNamaObatModal');
         const editForm = document.getElementById('editNamaObatForm');
+        const editStatusToggle = document.getElementById('edit_status_toggle');
+        const editStatusHidden = document.getElementById('edit_status_hidden');
+        const editStatusLabel = document.getElementById('edit_status_label');
+        if (editForm) {
+            bindStatusToggleToForm(editForm, editStatusToggle, editStatusHidden, editStatusLabel);
+        }
 
         function openEditModal() {
             if (!editModal) return;
@@ -625,6 +738,14 @@
                 }
                 const lokasiEl = document.getElementById('edit_lokasi_penyimpanan');
                 if (lokasiEl) lokasiEl.value = data.lokasi || '';
+
+                const statusToggle = document.getElementById('edit_status_toggle');
+                const statusHidden = document.getElementById('edit_status_hidden');
+                const statusLabel = document.getElementById('edit_status_label');
+                if (statusToggle && statusHidden) {
+                    statusToggle.checked = (data.status || 'aktif') === 'aktif';
+                    syncStatusToggle(statusToggle, statusHidden, statusLabel);
+                }
             } catch (err) {
                 console.error('populateEditForm error:', err);
             }
@@ -639,7 +760,8 @@
                         nama_obat: this.dataset.nama_obat,
                         jenis_id: this.dataset.jenis_id,
                         satuan_id: this.dataset.satuan_id,
-                        lokasi: this.dataset.lokasi || ''
+                        lokasi: this.dataset.lokasi || '',
+                        status: this.dataset.status || 'aktif'
                     };
 
                     if (window.console && window.console.log) console.log('edit button clicked, id=', data.id);
@@ -668,7 +790,8 @@
                         nama_obat: btn.dataset.nama_obat,
                         jenis_id: btn.dataset.jenis_id,
                         satuan_id: btn.dataset.satuan_id,
-                        lokasi: btn.dataset.lokasi || ''
+                        lokasi: btn.dataset.lokasi || '',
+                        status: btn.dataset.status || 'aktif'
                     };
                     populateEditForm(data);
                 }
@@ -692,6 +815,15 @@
                     if (oldInput.lokasi_penyimpanan) {
                         const oldLokasi = document.getElementById('edit_lokasi_penyimpanan');
                         if (oldLokasi) oldLokasi.value = oldInput.lokasi_penyimpanan;
+                    }
+                    if (oldInput.status) {
+                        const oldStatusToggle = document.getElementById('edit_status_toggle');
+                        const oldStatusHidden = document.getElementById('edit_status_hidden');
+                        const oldStatusLabel = document.getElementById('edit_status_label');
+                        if (oldStatusToggle && oldStatusHidden) {
+                            oldStatusToggle.checked = oldInput.status === 'aktif';
+                            syncStatusToggle(oldStatusToggle, oldStatusHidden, oldStatusLabel);
+                        }
                     }
                 }
 

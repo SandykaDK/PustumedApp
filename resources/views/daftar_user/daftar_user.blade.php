@@ -22,6 +22,8 @@
     <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/daftar_user/daftar_user.css') }}">
     <link rel="stylesheet" href="{{ asset('css/components/modal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/components/form.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/components/alert.css') }}">
 </head>
 <body>
 
@@ -96,7 +98,7 @@
             <table class="user-table">
                 <thead>
                 <tr>
-                    <th>No</th>
+                    <x-sortable-th column="id" label="No." />
                     <x-sortable-th column="name" label="Nama" />
                     <x-sortable-th column="email" label="Email" />
                     <x-sortable-th column="no_telepon" label="No Telepon" />
@@ -149,9 +151,12 @@
                                         </svg>
                                     </button>
 
-                                    <!-- DELETE -->
-                                    <x-confirm-delete action="{{ route('users.destroy', $user->id) }}" :id="'delete-user-'.$user->id" title="Hapus User" message="Yakin ingin menghapus user {{ $user->name }}?">
-                                        <button type="button" class="action-btn delete" title="Hapus">
+                                    @php
+                                        $userHasTransactions = $user->hasTransactions();
+                                    @endphp
+
+                                    @if ($userHasTransactions)
+                                        <button type="button" class="action-btn delete disabled" title="Tidak bisa dihapus karena sudah digunakan di transaksi" disabled>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                 viewBox="0 0 24 24" stroke-width="1.5"
                                                 stroke="currentColor">
@@ -172,7 +177,31 @@
                                                     v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                             </svg>
                                         </button>
-                                    </x-confirm-delete>
+                                    @else
+                                        <x-confirm-delete action="{{ route('users.destroy', $user->id) }}" :id="'delete-user-'.$user->id" title="Hapus User" message="Yakin ingin menghapus user {{ $user->name }}?">
+                                            <button type="button" class="action-btn delete" title="Hapus">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m14.74 9-.346 9m-4.788 0
+                                                        L9.26 9m9.968-3.21c.342.052.682.107
+                                                        1.022.166m-1.022-.165L18.16 19.673
+                                                        a2.25 2.25 0 0 1-2.244 2.077H8.084
+                                                        a2.25 2.25 0 0 1-2.244-2.077
+                                                        L4.772 5.79m14.456 0
+                                                        a48.108 48.108 0 0 0-3.478-.397
+                                                        m-12 .562c.34-.059.68-.114
+                                                        1.022-.165m0 0a48.11 48.11 0 0 1
+                                                        3.478-.397m7.5 0v-.916
+                                                        c0-1.18-.91-2.164-2.09-2.201
+                                                        a51.964 51.964 0 0 0-3.32 0
+                                                        c-1.18.037-2.09 1.022-2.09 2.201
+                                                        v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </x-confirm-delete>
+                                    @endif
 
                                 </div>
                             </td>
@@ -236,23 +265,23 @@
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="name">Nama</label>
-                                <input id="name" type="text" name="name" value="{{ old('name') }}" required>
+                                <label for="name">Nama <span class="required-star">*</span></label>
+                                <input id="name" type="text" name="name" value="{{ old('name') }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="email">Email</label>
-                                <input id="email" type="email" name="email" value="{{ old('email') }}" required>
+                                <label for="email">Email <span class="required-star">*</span></label>
+                                <input id="email" type="email" name="email" value="{{ old('email') }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="no_telepon">No Telepon</label>
+                                <label for="no_telepon">No Telepon <span class="required-star">*</span></label>
                                 <input id="no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="role">Role</label>
-                                <select id="role" name="role" required>
+                                <label for="role">Role <span class="required-star">*</span></label>
+                                <select id="role" name="role">
                                     <option value="petugas_administrasi" {{ old('role') == 'petugas_administrasi' ? 'selected' : '' }}>Petugas Administrasi</option>
                                     <option value="petugas_obat" {{ old('role') == 'petugas_obat' ? 'selected' : '' }}>Petugas Obat</option>
                                     <option value="kepala_pustu" {{ old('role') == 'kepala_pustu' ? 'selected' : '' }}>Kepala Pustu</option>
@@ -263,12 +292,12 @@
 
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input id="password" type="password" name="password" required>
+                            <input id="password" type="password" name="password">
                         </div>
 
                         <div class="form-group">
                             <label for="password_confirmation">Konfirmasi Password</label>
-                            <input id="password_confirmation" type="password" name="password_confirmation" required>
+                            <input id="password_confirmation" type="password" name="password_confirmation">
                         </div>
 
                         <div class="form-group">
@@ -321,22 +350,22 @@
 
                         <div class="form-grid">
                             <div class="form-group">
-                                <label for="edit_name">Nama</label>
+                                <label for="edit_name">Nama <span class="required-star">*</span></label>
                                 <input id="edit_name" type="text" name="name" value="{{ old('name') }}" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_email">Email</label>
+                                <label for="edit_email">Email <span class="required-star">*</span></label>
                                 <input id="edit_email" type="email" name="email" value="{{ old('email') }}" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_no_telepon">No Telepon</label>
+                                <label for="edit_no_telepon">No Telepon <span class="required-star">*</span></label>
                                 <input id="edit_no_telepon" type="text" name="no_telepon" value="{{ old('no_telepon') }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="edit_role">Role</label>
+                                <label for="edit_role">Role <span class="required-star">*</span></label>
                                 <select id="edit_role" name="role" required>
                                     <option value="petugas_administrasi">Petugas Administrasi</option>
                                     <option value="petugas_obat">Petugas Obat</option>
